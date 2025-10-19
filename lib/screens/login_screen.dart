@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email cannot be empty';
-    if (!value.contains('@')) return 'Email is invalid';
+    if (!value.contains('@')) return 'Invalid email';
     return null;
   }
 
@@ -51,11 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _errorMessage = error;
       });
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
     }
   }
 
