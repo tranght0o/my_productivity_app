@@ -19,6 +19,21 @@ class TodoService {
     });
   }
 
+  Future<void> updateTodo({
+    required String id,
+    required String title,
+    required DateTime date,
+  }) async {
+    await _firestore.collection('todos').doc(id).update({
+      'title': title,
+      'date': Timestamp.fromDate(DateTime(date.year, date.month, date.day)),
+    });
+  }
+
+  Future<void> deleteTodo(String id) async {
+    await _firestore.collection('todos').doc(id).delete();
+  }
+
   Stream<List<Todo>> getTodosForDay(DateTime day) {
     if (uid == null) return const Stream.empty();
     final start = DateTime(day.year, day.month, day.day);

@@ -3,16 +3,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'navigation/bottom_nav.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   // Ensure Flutter widgets are initialized before Firebase
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase using the generated options
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Run the application
   runApp(const MyApp());

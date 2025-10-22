@@ -53,6 +53,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showTaskOptions(Todo todo) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    isScrollControlled: true,
+                    context: context,
+                    builder: (_) => AddTodoBottomSheet(
+                      initialDate: todo.date,
+                      todoToEdit: todo,
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _todoService.deleteTodo(todo.id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,6 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? TextDecoration.lineThrough
                               : TextDecoration.none,
                         ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () => _showTaskOptions(todo),
                       ),
                     );
                   },

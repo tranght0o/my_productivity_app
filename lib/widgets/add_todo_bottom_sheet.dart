@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import '../services/todo_service.dart';
+import '../models/todo_model.dart';
 
 class AddTodoBottomSheet extends StatefulWidget {
   final DateTime initialDate;
+  final Todo? todoToEdit;
 
-  const AddTodoBottomSheet({super.key, required this.initialDate});
+  const AddTodoBottomSheet({
+    super.key,
+    required this.initialDate,
+    this.todoToEdit,
+  });
 
   @override
   State<AddTodoBottomSheet> createState() => _AddTodoBottomSheetState();
@@ -18,7 +24,31 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate;
+    _selectedDate = widget.todoToEdit?.date ?? widget.initialDate;
+    if (widget.todoToEdit != null) {
+      _titleController.text = widget.todoToEdit!.title;
+    }
+  }
+
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) return;
+
+    if (widget.todoToEdit != null) {
+      // update
+      await _service.updateTodo(
+        id: widget.todoToEdit!.id,
+        title: title,
+        date: _selectedDate,
+      );
+    } else {
+      // add new
+      await _service.addTodo(
+        title: title,
+        date: _selectedDate,
+      );
+    }
+    Navigator.pop(context);
   }
 
   @override
@@ -58,15 +88,8 @@ class _AddTodoBottomSheetState extends State<AddTodoBottomSheet> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () async {
-              if (_titleController.text.trim().isEmpty) return;
-              await _service.addTodo(
-                title: _titleController.text.trim(),
-                date: _selectedDate,
-              );
-              Navigator.pop(context);
-            },
-            child: const Text('Add'),
+            onPressed: _save,
+            child: Text(widget.todoToEdit != null ? 'Update' : 'Add'),
           ),
           const SizedBox(height: 16),
         ],
