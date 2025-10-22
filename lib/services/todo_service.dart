@@ -22,14 +22,11 @@ class TodoService {
   Stream<List<Todo>> getTodosForDay(DateTime day) {
     if (uid == null) return const Stream.empty();
     final start = DateTime(day.year, day.month, day.day);
-    final end = DateTime(day.year, day.month, day.day, 23, 59, 59);
 
     return _firestore
         .collection('todos')
         .where('uid', isEqualTo: uid)
-        .where('date', isGreaterThanOrEqualTo: start)
-        .where('date', isLessThanOrEqualTo: end)
-        .orderBy('date')
+        .where('date', isEqualTo: start)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => Todo.fromMap(doc.id, doc.data()))
