@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/notification_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/profile/profile_screen.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -18,7 +18,7 @@ class _BottomNavState extends State<BottomNav> {
     HomeScreen(),
     LibraryScreen(),
     NotificationScreen(),
-    SettingsScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -53,7 +53,7 @@ class _BottomNavState extends State<BottomNav> {
             _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
             _buildNavItem(Icons.photo_library_outlined, Icons.photo_library, 'Library', 1),
             _buildNavItem(Icons.notifications_none, Icons.notifications, 'Notification', 2),
-            _buildNavItem(Icons.settings_outlined, Icons.settings, 'Settings', 3),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
           ],
         ),
       ),

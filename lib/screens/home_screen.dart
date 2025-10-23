@@ -3,6 +3,11 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/todo_service.dart';
 import '../widgets/add_todo_bottom_sheet.dart';
 import '../models/todo_model.dart';
+import '../services/habit_service.dart';
+import '../services/habit_log_service.dart';
+import '../models/habit_model.dart';
+import '../models/habit_log_model.dart';
+import '../widgets/add_habit_bottom_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   final _todoService = TodoService();
+  final _habitService = HabitService();
+  final _habitLogService = HabitLogService();
 
   void _showAddOptions() {
     showModalBottomSheet(
@@ -39,49 +46,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ListTile(
                 leading: const Icon(Icons.repeat),
                 title: const Text('Habit'),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.mood),
-                title: const Text('Mood'),
-                onTap: () {},
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showTaskOptions(Todo todo) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit'),
                 onTap: () {
                   Navigator.pop(context);
                   showModalBottomSheet(
                     isScrollControlled: true,
                     context: context,
-                    builder: (_) => AddTodoBottomSheet(
-                      initialDate: todo.date,
-                      todoToEdit: todo,
-                    ),
+                    builder: (_) => const AddHabitBottomSheet(),
                   );
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete),
-                title: const Text('Delete'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _todoService.deleteTodo(todo.id);
-                },
+                leading: const Icon(Icons.mood),
+                title: const Text('Mood'),
+                onTap: () {},
               ),
             ],
           ),
@@ -110,47 +87,107 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: StreamBuilder<List<Todo>>(
-              stream: _todoService.getTodosForDay(_selectedDay),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final todos = snapshot.data!;
-                if (todos.isEmpty) {
-                  return const Center(child: Text('No tasks for this day'));
-                }
-                return ListView.builder(
-                  itemCount: todos.length,
-                  itemBuilder: (context, index) {
-                    final todo = todos[index];
-                    return ListTile(
-                      leading: IconButton(
-                        icon: Icon(
-                          todo.done
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
-                          color: todo.done ? Colors.purple : Colors.grey,
-                        ),
-                        onPressed: () =>
-                            _todoService.toggleDone(todo.id, todo.done),
-                      ),
-                      title: Text(
-                        todo.title,
-                        style: TextStyle(
-                          decoration: todo.done
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                        ),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () => _showTaskOptions(todo),
-                      ),
-                    );
-                  },
-                );
-              },
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // ---------- TODOs ----------
+                  StreamBuilder<List<Todo>>(
+                    stream: _todoService.getTodosForDay(_selectedDay),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final todos = snapshot.data!;
+                      if (todos.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('No tasks for this day'),
+                        );
+                      }
+                      return Column(
+                        children: todos.map((todo) {
+                          return ListTile(
+                            leading: IconButton(
+                              icon: Icon(
+                                todo.done
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                color:
+                                    todo.done ? Colors.purple : Colors.grey,
+                              ),
+                              onPressed: () =>
+                                  _todoService.toggleDone(todo.id, todo.done),
+                            ),
+                            title: Text(
+                              todo.title,
+                              style: TextStyle(
+                                decoration: todo.done
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // ---------- HABITS ----------
+                  StreamBuilder<List<Habit>>(
+                    stream: _habitService.getHabits(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final habits = snapshot.data!;
+                      if (habits.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('No habits yet'),
+                        );
+                      }
+
+                      return StreamBuilder<List<HabitLog>>(
+                        stream: _habitLogService.getLogsForDay(_selectedDay),
+                        builder: (context, logSnap) {
+                          final logs = logSnap.data ?? [];
+                          return Column(
+                            children: habits.map((habit) {
+                              final log = logs.firstWhere(
+                                (l) => l.habitId == habit.id,
+                                orElse: () => HabitLog(
+                                  id: '',
+                                  habitId: habit.id,
+                                  userId: '',
+                                  dayKey: '',
+                                  done: false,
+                                ),
+                              );
+                              return ListTile(
+                                leading: IconButton(
+                                  icon: Icon(
+                                    log.done
+                                        ? Icons.check_circle
+                                        : Icons.circle_outlined,
+                                    color: log.done
+                                        ? Colors.green
+                                        : Colors.grey,
+                                  ),
+                                  onPressed: () => _habitLogService
+                                      .toggleHabit(habit.id, _selectedDay, log.done),
+                                ),
+                                title: Text(habit.name),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
