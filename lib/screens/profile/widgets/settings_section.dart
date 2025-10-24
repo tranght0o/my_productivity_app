@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../login_screen.dart';
+import '../../auth_wrapper.dart';
 
 class SettingsSection extends StatelessWidget {
   const SettingsSection({super.key});
 
-  void _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+  // Handles user sign-out and navigation back to AuthWrapper
+  Future<void> _logout(BuildContext context) async {
+    try {
+      // Sign out from Firebase
+      await FirebaseAuth.instance.signOut();
+
+      // Make sure the widget is still mounted before navigation
+      if (!context.mounted) return;
+
+      // Clear all previous routes and navigate to AuthWrapper
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+        (route) => false,
+      );
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed out successfully.')),
+      );
+    } catch (e) {
+      // Handle sign-out error
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing out: $e')),
+      );
+    }
   }
 
   @override
@@ -23,6 +42,7 @@ class SettingsSection extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Account settings
           ListTile(
             leading: const Icon(Icons.account_circle_outlined, color: Colors.deepPurple),
             title: const Text("My Account"),
@@ -31,6 +51,8 @@ class SettingsSection extends StatelessWidget {
             onTap: () {},
           ),
           const Divider(height: 1),
+
+          // Notification toggle
           SwitchListTile(
             secondary: const Icon(Icons.notifications_none, color: Colors.deepPurple),
             title: const Text("Notifications"),
@@ -38,6 +60,8 @@ class SettingsSection extends StatelessWidget {
             onChanged: (val) {},
           ),
           const Divider(height: 1),
+
+          // App theme option
           ListTile(
             leading: const Icon(Icons.color_lens_outlined, color: Colors.deepPurple),
             title: const Text("App Theme"),
@@ -46,6 +70,8 @@ class SettingsSection extends StatelessWidget {
             onTap: () {},
           ),
           const Divider(height: 1),
+
+          // Logout option
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
             title: const Text("Log out"),

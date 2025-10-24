@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
-import 'navigation/bottom_nav.dart';
-import 'screens/login_screen.dart';
+import 'screens/auth_wrapper.dart';
 
 void main() async {
-  // Ensure Flutter widgets are initialized before Firebase
+  // Ensure Flutter widgets are properly initialized before Firebase setup
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase using the generated options
+  // Initialize Firebase with the platform-specific configuration
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Run the application
+  // Start the app
   runApp(const MyApp());
 }
 
@@ -28,27 +26,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         scaffoldBackgroundColor: Colors.grey[100],
       ),
-
-      // Use StreamBuilder to listen to authentication state changes
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // While Firebase is checking the current user session
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          // If the user is already signed in, navigate to the main app
-          if (snapshot.hasData) {
-            return const BottomNav();
-          }
-
-          // If no user is signed in, navigate to the login screen
-          return const LoginScreen();
-        },
-      ),
+      // AuthWrapper automatically decides which screen to show
+      home: const AuthWrapper(),
     );
   }
 }
