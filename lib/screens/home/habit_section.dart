@@ -3,6 +3,8 @@ import '../../services/habit_service.dart';
 import '../../services/habit_log_service.dart';
 import '../../models/habit_model.dart';
 import '../../models/habit_log_model.dart';
+import '../../widgets/add_habit_bottom_sheet.dart';
+
 
 class HabitSection extends StatefulWidget {
   final DateTime selectedDay;
@@ -15,6 +17,42 @@ class HabitSection extends StatefulWidget {
 class _HabitSectionState extends State<HabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
+
+  void _showHabitOptions(Habit habit) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    isScrollControlled: true,
+                    context: context,
+                    builder: (_) => AddHabitBottomSheet(
+                      habitToEdit: habit,
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _habitService.deleteHabit(habit.id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,9 +123,7 @@ class _HabitSectionState extends State<HabitSection> {
                                 log.done
                                     ? Icons.check_circle
                                     : Icons.circle_outlined,
-                                color: log.done
-                                    ? Colors.green
-                                    : Colors.grey,
+                                color: log.done ? Colors.green : Colors.grey,
                               ),
                               onPressed: () => _habitLogService.toggleHabit(
                                 habit.id,
@@ -100,6 +136,10 @@ class _HabitSectionState extends State<HabitSection> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.w500,
                               ),
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.more_vert, color: Colors.grey),
+                              onPressed: () => _showHabitOptions(habit),
                             ),
                           ),
                         );

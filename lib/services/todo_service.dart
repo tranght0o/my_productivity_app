@@ -51,4 +51,16 @@ class TodoService {
   Future<void> toggleDone(String id, bool done) async {
     await _firestore.collection('todos').doc(id).update({'done': !done});
   }
+
+
+  Future<List<Todo>> getAllTodosOnce() async {
+  if (uid == null) return [];
+  final snapshot = await _firestore
+      .collection('todos')
+      .where('uid', isEqualTo: uid)
+      .get();
+  return snapshot.docs.map((doc) => Todo.fromMap(doc.id, doc.data())).toList();
+  }
+
 }
+

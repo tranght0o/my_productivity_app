@@ -1,19 +1,47 @@
 import 'package:flutter/material.dart';
 import '../services/habit_service.dart';
+import '../../models/habit_model.dart';
 
 class AddHabitBottomSheet extends StatefulWidget {
-  const AddHabitBottomSheet({super.key});
+  final Habit? habitToEdit;
+  const AddHabitBottomSheet({super.key, this.habitToEdit});
 
   @override
   State<AddHabitBottomSheet> createState() => _AddHabitBottomSheetState();
 }
 
 class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
-  final _controller = TextEditingController();
+  late TextEditingController _controller;
   final _habitService = HabitService();
 
   @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.habitToEdit?.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+
+    if (widget.habitToEdit != null) {
+      await _habitService.updateHabit(widget.habitToEdit!.id, name);
+    } else {
+      await _habitService.addHabit(name);
+    }
+
+    if (context.mounted) Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isEdit = widget.habitToEdit != null;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -24,7 +52,10 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Add Habit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            isEdit ? 'Edit Habit' : 'Add Habit',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _controller,
@@ -35,12 +66,8 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
           ),
           const SizedBox(height: 12),
           ElevatedButton(
-            onPressed: () async {
-              if (_controller.text.trim().isEmpty) return;
-              await _habitService.addHabit(_controller.text.trim());
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Save'),
+            onPressed: _save,
+            child: Text(isEdit ? 'Update' : 'Save'),
           ),
         ],
       ),

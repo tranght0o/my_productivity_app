@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class LibraryScreen extends StatelessWidget {
-  const LibraryScreen({super.key});
+class LibraryHabitSection extends StatelessWidget {
+  const LibraryHabitSection({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text('Library Screen'),
+      child: Text('Habit content '),
     );
   }
 }
