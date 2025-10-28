@@ -105,6 +105,11 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           t.date.month == _selectedMonth.month;
     }).toList();
 
+    // Count total and completed tasks for summary
+    final totalCount = filteredTodos.length;
+    final doneCount = filteredTodos.where((t) => t.done).length;
+    final progress = totalCount == 0 ? 0.0 : doneCount / totalCount;
+
     // Group todos by day
     final Map<DateTime, List<Todo>> todosByDay = {};
     for (var todo in filteredTodos) {
@@ -148,6 +153,33 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                 ),
                 onPressed: _toggleSortOrder,
                 tooltip: 'Toggle sort order',
+              ),
+            ],
+          ),
+        ),
+
+        // ===================================================
+        //  Summary section (shows total tasks + done + bar)
+        // ===================================================
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$totalCount tasks, $doneCount done',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 6),
+              LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(8),
+                backgroundColor: Colors.grey[200],
+                color: Colors.deepPurple,
               ),
             ],
           ),
