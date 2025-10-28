@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
 import '../../services/todo_service.dart';
 import '../../models/todo_model.dart';
 import '../../widgets/add_todo_bottom_sheet.dart';
@@ -13,8 +14,14 @@ class LibraryTodoSection extends StatefulWidget {
 class _LibraryTodoSectionState extends State<LibraryTodoSection> {
   final _todoService = TodoService();
 
+  // Currently selected month (default = current month)
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+  // List of all todos loaded from the service
   List<Todo> _todos = [];
+
+  // Whether dates are sorted ascending (oldest first)
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -22,13 +29,36 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     _fetchTodos();
   }
 
+  /// Fetch all todos once (you should already have getAllTodosOnce in your service)
   Future<void> _fetchTodos() async {
-    final allTodos = await _todoService.getAllTodosOnce(); // cần tạo trong service
+    final allTodos = await _todoService.getAllTodosOnce();
     setState(() {
       _todos = allTodos;
     });
   }
 
+  /// Show a month picker dialog (allows choosing both month and year)
+  Future<void> _pickMonth() async {
+    final picked = await showMonthPicker(
+      context: context,
+      initialDate: _selectedMonth,
+    );
+    if (picked != null) {
+      setState(() {
+        // Only keep month and year (ignore day)
+        _selectedMonth = DateTime(picked.year, picked.month);
+      });
+    }
+  }
+
+  /// Toggle between ascending / descending day order
+  void _toggleSortOrder() {
+    setState(() {
+      _isAscending = !_isAscending;
+    });
+  }
+
+  /// Open bottom sheet with Edit / Delete actions for a todo
   void _showTaskOptions(Todo todo) {
     showModalBottomSheet(
       context: context,
@@ -57,7 +87,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                 onTap: () async {
                   Navigator.pop(context);
                   await _todoService.deleteTodo(todo.id);
-                  _fetchTodos();
+                  _fetchTodos(); // refresh list after deletion
                 },
               ),
             ],
@@ -69,56 +99,63 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Lọc todo theo tháng được chọn
+    // Filter todos to only include those in the selected month
     final filteredTodos = _todos.where((t) {
       return t.date.year == _selectedMonth.year &&
           t.date.month == _selectedMonth.month;
     }).toList();
 
-    // Nhóm theo ngày
+    // Group todos by day
     final Map<DateTime, List<Todo>> todosByDay = {};
     for (var todo in filteredTodos) {
       final day = DateTime(todo.date.year, todo.date.month, todo.date.day);
-      if (!todosByDay.containsKey(day)) {
-        todosByDay[day] = [];
-      }
-      todosByDay[day]!.add(todo);
+      todosByDay.putIfAbsent(day, () => []).add(todo);
     }
 
-    final sortedDays = todosByDay.keys.toList()..sort((a, b) => a.compareTo(b));
+    // Sort days ascending or descending depending on user selection
+    final sortedDays = todosByDay.keys.toList()
+      ..sort((a, b) => _isAscending ? a.compareTo(b) : b.compareTo(a));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Month filter
+        // --------------------------
+        //  Month picker + sort toggle
+        // --------------------------
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Month: ',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              // Button to open month picker
+              TextButton.icon(
+                onPressed: _pickMonth,
+                icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+                label: Text(
+                  '${_selectedMonth.month}/${_selectedMonth.year}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
               ),
-              DropdownButton<DateTime>(
-                value: _selectedMonth,
-                items: List.generate(12, (index) {
-                  final date = DateTime(DateTime.now().year, index + 1);
-                  return DropdownMenuItem(
-                    value: date,
-                    child: Text('${date.month}/${date.year}'),
-                  );
-                }),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMonth = value!;
-                  });
-                },
+
+              // Icon button to toggle sort direction
+              IconButton(
+                icon: Icon(
+                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: Colors.deepPurple,
+                ),
+                onPressed: _toggleSortOrder,
+                tooltip: 'Toggle sort order',
               ),
             ],
           ),
         ),
 
-        // Content per day
+        // --------------------------
+        //  Todos grouped by day
+        // --------------------------
         Expanded(
           child: sortedDays.isEmpty
               ? const Center(child: Text('No tasks for this month'))
@@ -132,14 +169,19 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Day title
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
                             '${day.day}/${day.month}/${day.year}',
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
+
+                        // All todos for that day
                         Column(
                           children: dayTodos.map((todo) {
                             return Container(
@@ -165,8 +207,11 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                         ? Colors.deepPurple
                                         : Colors.grey,
                                   ),
+                                  // Toggle done state
                                   onPressed: () => _todoService.toggleDone(
-                                      todo.id, todo.done),
+                                    todo.id,
+                                    todo.done,
+                                  ),
                                 ),
                                 title: Text(
                                   todo.title,
