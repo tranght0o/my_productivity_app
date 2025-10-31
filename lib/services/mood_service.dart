@@ -57,7 +57,7 @@ class MoodService {
     }
   }
 
-  /// Optional: fetch all moods (for analytics, calendar, etc.)
+  /// Stream all moods (for live tracking)
   Stream<List<Mood>> getAllMoods() {
     return _firestore
         .collection('moods')
@@ -65,5 +65,17 @@ class MoodService {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((d) => Mood.fromMap(d.data(), d.id)).toList());
+  }
+
+  /// Fetch all moods once (used for calendar)
+  Future<List<Mood>> getAllMoodsOnce() async {
+    final snapshot = await _firestore
+        .collection('moods')
+        .where('userId', isEqualTo: _user!.uid)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Mood.fromMap(doc.data(), doc.id))
+        .toList();
   }
 }
