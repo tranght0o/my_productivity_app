@@ -13,13 +13,10 @@ class LibraryMoodSection extends StatefulWidget {
 class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   final _moodService = MoodService();
 
-  // all moods loaded once
-  List<Mood> _allMoods = [];
-
-  // quick lookup map keyed by "yyyy-MM-dd"
+  // map moods by day key
   Map<String, Mood> _moodByDay = {};
 
-  // currently focused day in calendar
+  // focused day in calendar
   DateTime _focusedDay = DateTime.now();
 
   @override
@@ -28,18 +25,15 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     _fetchMoods();
   }
 
-  // load all moods once and build lookup map
+  // fetch all moods once
   Future<void> _fetchMoods() async {
     final moods = await _moodService.getAllMoodsOnce();
     setState(() {
-      _allMoods = moods;
-      _moodByDay = {
-        for (var m in moods) _dayKeyFromDate(m.date): m,
-      };
+      _moodByDay = { for (var m in moods) _dayKeyFromDate(m.date): m };
     });
   }
 
-  // helper: create "yyyy-MM-dd" key from DateTime
+  // helper to generate yyyy-MM-dd key
   String _dayKeyFromDate(DateTime date) {
     final y = date.year.toString();
     final m = date.month.toString().padLeft(2, '0');
@@ -50,22 +44,16 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   // map mood value to emoji
   String _emojiForValue(int value) {
     switch (value) {
-      case 1:
-        return '😞';
-      case 2:
-        return '😐';
-      case 3:
-        return '🙂';
-      case 4:
-        return '😄';
-      case 5:
-        return '🤩';
-      default:
-        return '';
+      case 1: return '😞';
+      case 2: return '😐';
+      case 3: return '🙂';
+      case 4: return '😄';
+      case 5: return '🤩';
+      default: return '';
     }
   }
 
-  // show dialog to view/edit note for a mood (only if mood exists)
+  // show dialog to view/edit note
   void _showNoteDialogForDay(DateTime day, Mood mood) {
     final controller = TextEditingController(text: mood.note ?? '');
     showDialog(
@@ -87,11 +75,12 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           ),
           TextButton(
             onPressed: () async {
-              // update mood (same value, updated note)
-              await _moodService.addOrUpdateMood(day, mood.moodValue, controller.text.trim());
-              if (context.mounted) {
+              await _moodService.addOrUpdateMood(
+                day, mood.moodValue, controller.text.trim()
+              );
+              if (mounted) {
                 Navigator.pop(context);
-                _fetchMoods(); // refresh
+                _fetchMoods();
               }
             },
             child: const Text('Save'),
@@ -109,7 +98,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // title
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
             child: Text(
@@ -117,8 +105,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
-          // calendar
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -140,16 +126,9 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                 final Mood? mood = _moodByDay[key];
 
                 if (mood == null || mood.moodValue == 0) {
-                  // no mood -> just show day number
-                  return Center(
-                    child: Text(
-                      '${day.day}',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  );
+                  return Center(child: Text('${day.day}', style: const TextStyle(fontSize: 14)));
                 }
 
-                // has mood -> show day number + emoji, tappable to edit note
                 return GestureDetector(
                   onTap: () => _showNoteDialogForDay(day, mood),
                   child: Column(
@@ -157,16 +136,11 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                     children: [
                       Text('${day.day}', style: const TextStyle(fontSize: 12)),
                       const SizedBox(height: 4),
-                      Text(
-                        _emojiForValue(mood.moodValue),
-                        style: const TextStyle(fontSize: 22),
-                      ),
+                      Text(_emojiForValue(mood.moodValue), style: const TextStyle(fontSize: 22)),
                     ],
                   ),
                 );
               },
-
-              // highlight today
               todayBuilder: (context, day, _) {
                 final key = _dayKeyFromDate(day);
                 final Mood? mood = _moodByDay[key];
@@ -178,8 +152,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
-                      child: Text('${day.day}',
-                          style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+                      child: Text('${day.day}', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
                     ),
                   );
                 }
