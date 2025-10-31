@@ -23,6 +23,8 @@ class _MoodSectionState extends State<MoodSection> {
     {'emoji': '🤩', 'value': 5},
   ];
 
+  int _tempSelected = 0; // giữ trạng thái chọn tạm thời (UI highlight ngay)
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -31,6 +33,7 @@ class _MoodSectionState extends State<MoodSection> {
 
   // Save mood instantly when selected
   Future<void> _saveMood(int value, String? note) async {
+    setState(() => _tempSelected = value); // update UI ngay lập tức
     await _moodService.addOrUpdateMood(widget.selectedDay, value, note);
   }
 
@@ -43,7 +46,7 @@ class _MoodSectionState extends State<MoodSection> {
         stream: _moodService.getMoodForDay(widget.selectedDay),
         builder: (context, snapshot) {
           final currentMood = snapshot.data;
-          final currentValue = currentMood?.moodValue ?? 0;
+          final currentValue = currentMood?.moodValue ?? _tempSelected;
 
           // Keep the note field synced
           if (currentMood?.note != null &&
@@ -73,7 +76,7 @@ class _MoodSectionState extends State<MoodSection> {
                     return GestureDetector(
                       onTap: () => _saveMood(m['value'], _noteController.text),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                        duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: selected ? Colors.deepPurple[50] : null,

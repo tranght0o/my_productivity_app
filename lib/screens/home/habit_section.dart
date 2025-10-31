@@ -123,7 +123,7 @@ class _HabitSectionState extends State<HabitSection> {
                                 log.done
                                     ? Icons.check_circle
                                     : Icons.circle_outlined,
-                                color: log.done ? Colors.green : Colors.grey,
+                                color: log.done ? Colors.deepPurple : Colors.grey,
                               ),
                               onPressed: () => _habitLogService.toggleHabit(
                                 habit.id,
