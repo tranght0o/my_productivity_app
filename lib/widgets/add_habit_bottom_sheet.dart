@@ -179,7 +179,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                       });
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
             const SizedBox(height: 12),

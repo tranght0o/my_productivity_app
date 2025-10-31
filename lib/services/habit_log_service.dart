@@ -39,4 +39,22 @@ class HabitLogService {
       await ref.doc(query.docs.first.id).update({'done': !currentState});
     }
   }
+
+  Future<List<HabitLog>> getLogsBetween(DateTime start, DateTime end) async {
+    final query = await _firestore
+        .collection('habitLogs')
+        .where('userId', isEqualTo: _user!.uid)
+        .get();
+
+    final all = query.docs.map((d) => HabitLog.fromMap(d.data(), d.id)).toList();
+
+    return all.where((l) {
+      final parts = l.dayKey.split('-');
+      final date = DateTime(
+          int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      return date.isAfter(start.subtract(const Duration(days: 1))) &&
+          date.isBefore(end.add(const Duration(days: 1)));
+    }).toList();
+  }
+
 }
