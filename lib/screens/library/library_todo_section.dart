@@ -29,7 +29,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     _fetchTodos();
   }
 
-  /// Fetch all todos once (you should already have getAllTodosOnce in your service)
+  /// Fetch all todos once
   Future<void> _fetchTodos() async {
     final allTodos = await _todoService.getAllTodosOnce();
     setState(() {
@@ -37,7 +37,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     });
   }
 
-  /// Show a month picker dialog (allows choosing both month and year)
+  /// Show a month picker dialog
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -45,7 +45,6 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     );
     if (picked != null) {
       setState(() {
-        // Only keep month and year (ignore day)
         _selectedMonth = DateTime(picked.year, picked.month);
       });
     }
@@ -87,7 +86,9 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                 onTap: () async {
                   Navigator.pop(context);
                   await _todoService.deleteTodo(todo.id);
-                  _fetchTodos(); // refresh list after deletion
+                  setState(() {
+                    _todos.removeWhere((t) => t.id == todo.id);
+                  });
                 },
               ),
             ],
@@ -124,15 +125,12 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --------------------------
-        //  Month picker + sort toggle
-        // --------------------------
+        // Month picker + sort toggle
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Button to open month picker
               TextButton.icon(
                 onPressed: _pickMonth,
                 icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
@@ -144,8 +142,6 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                   ),
                 ),
               ),
-
-              // Icon button to toggle sort direction
               IconButton(
                 icon: Icon(
                   _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
@@ -158,9 +154,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // ===================================================
-        //  Summary section (shows total tasks + done + bar)
-        // ===================================================
+        // Summary section
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Column(
@@ -185,9 +179,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // --------------------------
-        //  Todos grouped by day
-        // --------------------------
+        // Todos grouped by day
         Expanded(
           child: sortedDays.isEmpty
               ? const Center(child: Text('No tasks for this month'))
@@ -240,10 +232,15 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                         : Colors.grey,
                                   ),
                                   // Toggle done state
-                                  onPressed: () => _todoService.toggleDone(
-                                    todo.id,
-                                    todo.done,
-                                  ),
+                                  onPressed: () async {
+                                    // Update Firestore
+                                    await _todoService.toggleDone(todo.id, todo.done);
+
+                                    // Update local state immediately
+                                    setState(() {
+                                      todo.done = !todo.done;
+                                    });
+                                  },
                                 ),
                                 title: Text(
                                   todo.title,
@@ -255,8 +252,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                   ),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert,
-                                      color: Colors.grey),
+                                  icon: const Icon(Icons.more_vert, color: Colors.grey),
                                   onPressed: () => _showTaskOptions(todo),
                                 ),
                               ),
