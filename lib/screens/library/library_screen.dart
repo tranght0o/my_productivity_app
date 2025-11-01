@@ -13,6 +13,29 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   String _selectedOption = 'todo';
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode(); // controls keyboard focus on search bar
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Rebuild UI when search text changes
+    _searchController.addListener(() {
+      setState(() {});
+    });
+
+    // Rebuild UI when focus changes (to show/hide the clear button)
+    _searchFocus.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +45,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search bar
+          // --- Search bar ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Container(
@@ -39,19 +62,36 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ),
               child: TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
+                focusNode: _searchFocus,
+                decoration: InputDecoration(
                   hintText: 'Search...',
-                  prefixIcon: Icon(Icons.search, size: 20),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+
+                  // Show clear (X) button if field is focused OR has text
+                  suffixIcon: (_searchFocus.hasFocus ||
+                          _searchController.text.isNotEmpty)
+                      ? IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () {
+                            _searchController.clear(); // clear text
+                            _searchFocus.unfocus(); // remove keyboard focus
+                            setState(() {}); // refresh UI
+                          },
+                        )
+                      : null,
+
                   border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 12,
+                  ),
                 ),
                 style: const TextStyle(fontSize: 14),
               ),
             ),
           ),
 
-          // Menu
+          // --- Menu for section switching ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Container(
@@ -78,12 +118,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
           const SizedBox(height: 12),
 
-          // Content
+          // --- Dynamic section display ---
           Expanded(
             child: _selectedOption == 'todo'
-                ? const LibraryTodoSection()
+                ? LibraryTodoSection(searchQuery: _searchController.text)
                 : _selectedOption == 'habit'
-                    ? const LibraryHabitSection()
+                    ? LibraryHabitSection(searchQuery: _searchController.text)
                     : const LibraryMoodSection(),
           ),
         ],
@@ -91,6 +131,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
+  // Build one segment button
   Widget _buildSegment(String label, String value) {
     final bool isSelected = _selectedOption == value;
     return Expanded(

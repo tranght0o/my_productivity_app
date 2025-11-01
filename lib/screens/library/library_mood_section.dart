@@ -24,7 +24,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     _fetchMoods();
   }
 
-  // Fetch all moods once (current logic)
+  // Fetch all moods once
   Future<void> _fetchMoods() async {
     final moods = await _moodService.getAllMoodsOnce();
     setState(() {
@@ -32,7 +32,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     });
   }
 
-  // Month picker (UI only)
+  // Month picker
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -45,7 +45,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     }
   }
 
-  // Helper: format yyyy-MM-dd key
+  // Format date to yyyy-MM-dd key
   String _dayKeyFromDate(DateTime date) {
     final y = date.year.toString();
     final m = date.month.toString().padLeft(2, '0');
@@ -71,7 +71,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     }
   }
 
-  // Show dialog to view/edit note
+  // Dialog for note
   void _showNoteDialogForDay(DateTime day, Mood mood) {
     final controller = TextEditingController(text: mood.note ?? '');
     showDialog(
@@ -139,7 +139,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           ),
         ),
 
-        // --- Clean card layout for calendar ---
+        // --- Calendar Card ---
         Expanded(
           child: SingleChildScrollView(
             child: Container(
@@ -156,67 +156,66 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
-                    child: Text(
-                      'Mood Calendar',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  TableCalendar(
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) =>
-                        _dayKeyFromDate(day) == _dayKeyFromDate(_focusedDay),
-                    onDaySelected: (selectedDay, focusedDay) {
-                      setState(() {
-                        _focusedDay = focusedDay;
-                      });
-                    },
-                    calendarFormat: CalendarFormat.month,
-                    headerVisible: false,
-                    calendarBuilders: CalendarBuilders(
-                      defaultBuilder: (context, day, _) {
-                        final key = _dayKeyFromDate(day);
-                        final Mood? mood = _moodByDay[key];
+              child: TableCalendar(
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
+                focusedDay: _focusedDay,
+                selectedDayPredicate: (day) =>
+                    _dayKeyFromDate(day) == _dayKeyFromDate(_focusedDay),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _focusedDay = focusedDay;
+                  });
+                },
+                calendarFormat: CalendarFormat.month,
+                headerVisible: false,
 
-                        if (mood == null || mood.moodValue == 0) {
-                          return Center(
-                            child: Text(
-                              '${day.day}',
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          );
-                        }
+                calendarStyle: const CalendarStyle(
+                  outsideDaysVisible: false,
+                  todayDecoration: BoxDecoration(), // remove default purple circle
+                  rowDecoration: BoxDecoration(),
+                  tablePadding: EdgeInsets.only(top: 8), // add spacing above weekdays
+                ),
 
-                        return GestureDetector(
-                          onTap: () => _showNoteDialogForDay(day, mood),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('${day.day}',
-                                  style: const TextStyle(fontSize: 12)),
-                              const SizedBox(height: 3),
-                              Text(
-                                _emojiForValue(mood.moodValue),
-                                style: const TextStyle(fontSize: 22),
-                              ),
-                            ],
+                calendarBuilders: CalendarBuilders(
+                  defaultBuilder: (context, day, _) {
+                    final key = _dayKeyFromDate(day);
+                    final Mood? mood = _moodByDay[key];
+                    final bool isToday = _dayKeyFromDate(day) ==
+                        _dayKeyFromDate(DateTime.now());
+
+                    return GestureDetector(
+                      onTap: mood != null
+                          ? () => _showNoteDialogForDay(day, mood)
+                          : null,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${day.day}',
+                            style: const TextStyle(fontSize: 12),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                          const SizedBox(height: 3),
+                          if (mood != null && mood.moodValue > 0)
+                            Text(
+                              _emojiForValue(mood.moodValue),
+                              style: const TextStyle(fontSize: 22),
+                            )
+                          else if (isToday)
+                            // ✅ Small dot under today
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Colors.deepPurple,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),

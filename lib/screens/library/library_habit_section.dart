@@ -7,7 +7,9 @@ import '../../services/habit_service.dart';
 import '../../services/habit_log_service.dart';
 
 class LibraryHabitSection extends StatefulWidget {
-  const LibraryHabitSection({super.key});
+  // Accept search text from parent widget
+  final String searchQuery;
+  const LibraryHabitSection({super.key, this.searchQuery = ''});
 
   @override
   State<LibraryHabitSection> createState() => _LibraryHabitSectionState();
@@ -17,17 +19,20 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
 
+  // Current selected month
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+  // Map of habit logs, grouped by habitId
   Map<String, List<HabitLog>> _logs = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchAllLogs();
+    _fetchAllLogs(); // load logs at startup
   }
 
+  /// Load all habit logs within the selected month
   Future<void> _fetchAllLogs() async {
-    // Lấy toàn bộ logs trong tháng đang chọn
     final start = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
     final end = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
 
@@ -40,6 +45,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     });
   }
 
+  /// Show month picker dialog and reload logs
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -60,14 +66,25 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       builder: (context, snapshot) {
         final habits = snapshot.data ?? [];
 
-        if (habits.isEmpty) {
+        // Apply search filtering
+        final filteredHabits = widget.searchQuery.isEmpty
+            ? habits
+            : habits
+                .where((h) => h.name
+                    .toLowerCase()
+                    .contains(widget.searchQuery.toLowerCase()))
+                .toList();
+
+        if (filteredHabits.isEmpty) {
           return const Center(child: Text("No habits found"));
         }
 
         return Column(
           children: [
+            // Top bar with month picker and refresh button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -90,11 +107,13 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                 ],
               ),
             ),
+
+            // Main list of habits
             Expanded(
               child: ListView.builder(
-                itemCount: habits.length,
+                itemCount: filteredHabits.length,
                 itemBuilder: (context, index) {
-                  final habit = habits[index];
+                  final habit = filteredHabits[index];
                   final logs = _logs[habit.id] ?? [];
                   return _buildHabitCalendar(habit, logs);
                 },
@@ -106,6 +125,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Build a card with habit name and its calendar
   Widget _buildHabitCalendar(Habit habit, List<HabitLog> logs) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -124,17 +144,20 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Habit name ---
+          // Habit name
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
               habit.name,
               style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
           ),
 
-          // --- Calendar ---
+          // Habit calendar display
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -146,10 +169,16 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             calendarStyle: const CalendarStyle(
               outsideDaysVisible: false,
             ),
+
+            // Build each cell of the calendar
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
                 final weekdayStr = _weekdayString(day.weekday);
+
+                // Check if this day is part of the habit's active days
                 final isHabitDay = habit.daysOfWeek.contains(weekdayStr);
+
+                // Find log for this day, if any
                 final log = logs.firstWhere(
                   (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
                   orElse: () => HabitLog(
@@ -165,7 +194,10 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   onTap: isHabitDay
                       ? () async {
                           await _habitLogService.toggleHabit(
-                              habit.id, day, log.done);
+                            habit.id,
+                            day,
+                            log.done,
+                          );
                           _fetchAllLogs();
                         }
                       : null,
@@ -199,6 +231,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Convert weekday number to string
   String _weekdayString(int weekday) {
     switch (weekday) {
       case DateTime.monday:

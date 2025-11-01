@@ -5,7 +5,9 @@ import '../../models/todo_model.dart';
 import '../../widgets/add_todo_bottom_sheet.dart';
 
 class LibraryTodoSection extends StatefulWidget {
-  const LibraryTodoSection({super.key});
+  // Accept search text from parent
+  final String searchQuery;
+  const LibraryTodoSection({super.key, this.searchQuery = ''});
 
   @override
   State<LibraryTodoSection> createState() => _LibraryTodoSectionState();
@@ -14,22 +16,22 @@ class LibraryTodoSection extends StatefulWidget {
 class _LibraryTodoSectionState extends State<LibraryTodoSection> {
   final _todoService = TodoService();
 
-  // Currently selected month (default = current month)
+  // Store current selected month
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
-  // List of all todos loaded from the service
+  // Store all todos fetched from service
   List<Todo> _todos = [];
 
-  // Whether dates are sorted ascending (oldest first)
+  // Sort order: true = ascending, false = descending
   bool _isAscending = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchTodos();
+    _fetchTodos(); // load todos once at start
   }
 
-  /// Fetch all todos once
+  /// Load all todos from Firestore once
   Future<void> _fetchTodos() async {
     final allTodos = await _todoService.getAllTodosOnce();
     setState(() {
@@ -37,7 +39,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     });
   }
 
-  /// Show a month picker dialog
+  /// Show month picker for filtering by month
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -50,14 +52,14 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     }
   }
 
-  /// Toggle between ascending / descending day order
+  /// Change between ascending and descending date order
   void _toggleSortOrder() {
     setState(() {
       _isAscending = !_isAscending;
     });
   }
 
-  /// Open bottom sheet with Edit / Delete actions for a todo
+  /// Show a bottom sheet with edit or delete actions
   void _showTaskOptions(Todo todo) {
     showModalBottomSheet(
       context: context,
@@ -100,32 +102,41 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter todos to only include those in the selected month
+    // Filter todos by selected month
     final filteredTodos = _todos.where((t) {
       return t.date.year == _selectedMonth.year &&
           t.date.month == _selectedMonth.month;
     }).toList();
 
-    // Count total and completed tasks for summary
-    final totalCount = filteredTodos.length;
-    final doneCount = filteredTodos.where((t) => t.done).length;
+    // If search text is not empty, filter by title
+    final searchedTodos = widget.searchQuery.isEmpty
+        ? filteredTodos
+        : filteredTodos
+            .where((t) => t.title
+                .toLowerCase()
+                .contains(widget.searchQuery.toLowerCase()))
+            .toList();
+
+    // Count total and done todos for progress
+    final totalCount = searchedTodos.length;
+    final doneCount = searchedTodos.where((t) => t.done).length;
     final progress = totalCount == 0 ? 0.0 : doneCount / totalCount;
 
     // Group todos by day
     final Map<DateTime, List<Todo>> todosByDay = {};
-    for (var todo in filteredTodos) {
+    for (var todo in searchedTodos) {
       final day = DateTime(todo.date.year, todo.date.month, todo.date.day);
       todosByDay.putIfAbsent(day, () => []).add(todo);
     }
 
-    // Sort days ascending or descending depending on user selection
+    // Sort days by order type
     final sortedDays = todosByDay.keys.toList()
       ..sort((a, b) => _isAscending ? a.compareTo(b) : b.compareTo(a));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Month picker + sort toggle
+        // Header section: month picker + sort button
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
@@ -154,7 +165,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // Summary section
+        // Progress summary (total + done)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Column(
@@ -179,10 +190,10 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // Todos grouped by day
+        // Todo list grouped by date
         Expanded(
           child: sortedDays.isEmpty
-              ? const Center(child: Text('No tasks for this month'))
+              ? const Center(child: Text('No tasks found'))
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: sortedDays.length,
@@ -205,7 +216,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                           ),
                         ),
 
-                        // All todos for that day
+                        // List of todos for that day
                         Column(
                           children: dayTodos.map((todo) {
                             return Container(
@@ -231,12 +242,12 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                         ? Colors.deepPurple
                                         : Colors.grey,
                                   ),
-                                  // Toggle done state
                                   onPressed: () async {
-                                    // Update Firestore
-                                    await _todoService.toggleDone(todo.id, todo.done);
+                                    // Update in Firestore
+                                    await _todoService.toggleDone(
+                                        todo.id, todo.done);
 
-                                    // Update local state immediately
+                                    // Update UI immediately
                                     setState(() {
                                       todo.done = !todo.done;
                                     });
@@ -252,7 +263,8 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                   ),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert, color: Colors.grey),
+                                  icon: const Icon(Icons.more_vert,
+                                      color: Colors.grey),
                                   onPressed: () => _showTaskOptions(todo),
                                 ),
                               ),
