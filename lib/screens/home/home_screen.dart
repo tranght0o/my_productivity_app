@@ -17,7 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
 
-  // Show bottom sheet for adding Todo, Habit, or Mood
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+
   void _showAddOptions() {
     showModalBottomSheet(
       context: context,
@@ -62,28 +63,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _previousMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
+    });
+  }
+
+  void _toggleCalendarFormat() {
+    setState(() {
+      _calendarFormat =
+          _calendarFormat == CalendarFormat.month ? CalendarFormat.week : CalendarFormat.month;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Schedule')),
+      backgroundColor: Colors.grey[50],
       body: Column(
         children: [
-          // Calendar
-          TableCalendar(
-            focusedDay: _focusedDay,
-            firstDay: DateTime(2000),
-            lastDay: DateTime(2100),
-            selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
+          // Calendar card
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Centered Month/Year with arrows
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left, size: 24),
+                        onPressed: _previousMonth,
+                        color: Colors.deepPurple,
+                      ),
+                      Text(
+                        "${_focusedDay.month}/${_focusedDay.year}",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.deepPurple),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 24),
+                        onPressed: _nextMonth,
+                        color: Colors.deepPurple,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Top-right toggle button (grey, subtle)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: Icon(
+                      _calendarFormat == CalendarFormat.month
+                          ? Icons.view_week
+                          : Icons.view_module,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
+                    onPressed: _toggleCalendarFormat,
+                  ),
+                ),
+
+                // Calendar widget with padding for header
+                Padding(
+                  padding: const EdgeInsets.only(top: 50), // add space between title and weekdays
+                  child: TableCalendar(
+                    focusedDay: _focusedDay,
+                    firstDay: DateTime(2000),
+                    lastDay: DateTime(2100),
+                    calendarFormat: _calendarFormat,
+                    selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    onFormatChanged: (format) {
+                      setState(() {
+                        _calendarFormat = format;
+                      });
+                    },
+                    calendarStyle: const CalendarStyle(
+                      outsideDaysVisible: false,
+                    ),
+                    headerVisible: false,
+                    rowHeight: 48,
+                  ),
+                ),
+              ],
+            ),
           ),
+
           const SizedBox(height: 12),
 
-          // Sections
+          // Main sections
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -92,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   HabitSection(selectedDay: _selectedDay),
                   const SizedBox(height: 16),
-                  MoodSection(selectedDay: _selectedDay),  
+                  MoodSection(selectedDay: _selectedDay),
                   const SizedBox(height: 16),
                 ],
               ),
