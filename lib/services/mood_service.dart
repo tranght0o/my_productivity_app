@@ -6,18 +6,20 @@ class MoodService {
   final _firestore = FirebaseFirestore.instance;
   final _user = FirebaseAuth.instance.currentUser;
 
-  /// Helper to generate a consistent key for each day (e.g. 2025-10-25)
-  String _getDayKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  /// Normalize a DateTime to only keep the date (no time).
+  /// Example: 2025-10-31 10:45 → becomes 2025-10-31 00:00.
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 
-  /// Get a stream of the mood for a specific day (used by the UI)
+  /// Get a stream of the mood for a specific day.
+  /// This updates in real time when Firestore data changes.
   Stream<Mood?> getMoodForDay(DateTime date) {
-    final dayKey = _getDayKey(date);
+    final normalizedDate = _normalizeDate(date);
     return _firestore
         .collection('moods')
         .where('userId', isEqualTo: _user!.uid)
-        .where('dayKey', isEqualTo: dayKey)
+        .where('date', isEqualTo: normalizedDate)
         .limit(1)
         .snapshots()
         .map((snapshot) {
@@ -27,29 +29,29 @@ class MoodService {
     });
   }
 
-  /// Add a new mood or update an existing one for the selected day
+  /// Add a new mood or update an existing one for the selected day.
+  /// If a record for that date already exists, it is updated instead of duplicated.
   Future<void> addOrUpdateMood(DateTime date, int value, String? note) async {
-    final dayKey = _getDayKey(date);
+    final normalizedDate = _normalizeDate(date);
     final moodsRef = _firestore.collection('moods');
 
-    // Check if a mood already exists for this user/day
+    // Check if a mood already exists for this user and date.
     final existing = await moodsRef
         .where('userId', isEqualTo: _user!.uid)
-        .where('dayKey', isEqualTo: dayKey)
+        .where('date', isEqualTo: normalizedDate)
         .limit(1)
         .get();
 
     if (existing.docs.isEmpty) {
-      // Create new
+      // Create a new mood document
       await moodsRef.add({
         'userId': _user.uid,
+        'date': normalizedDate,
         'moodValue': value,
         'note': note,
-        'dayKey': dayKey,
-        'createdAt': DateTime.now(),
       });
     } else {
-      // Update existing
+      // Update the existing mood document
       await moodsRef.doc(existing.docs.first.id).update({
         'moodValue': value,
         'note': note,
@@ -57,7 +59,7 @@ class MoodService {
     }
   }
 
-  /// Stream all moods (for live tracking)
+  /// Stream all moods of the current user (auto-updates in real time).
   Stream<List<Mood>> getAllMoods() {
     return _firestore
         .collection('moods')
@@ -67,7 +69,7 @@ class MoodService {
             snapshot.docs.map((d) => Mood.fromMap(d.data(), d.id)).toList());
   }
 
-  /// Fetch all moods once (used for calendar)
+  /// Fetch all moods once (used for calendar and reports).
   Future<List<Mood>> getAllMoodsOnce() async {
     final snapshot = await _firestore
         .collection('moods')

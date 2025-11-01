@@ -13,10 +13,10 @@ class LibraryMoodSection extends StatefulWidget {
 class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   final _moodService = MoodService();
 
-  // map moods by day key
+  // Store all moods grouped by day key (example: "2025-10-31")
   Map<String, Mood> _moodByDay = {};
 
-  // focused day in calendar
+  // Track which day is currently focused in the calendar
   DateTime _focusedDay = DateTime.now();
 
   @override
@@ -25,15 +25,15 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     _fetchMoods();
   }
 
-  // fetch all moods once
+  /// Fetch all moods from Firestore once and group them by day key
   Future<void> _fetchMoods() async {
     final moods = await _moodService.getAllMoodsOnce();
     setState(() {
-      _moodByDay = { for (var m in moods) _dayKeyFromDate(m.date): m };
+      _moodByDay = {for (var m in moods) _dayKeyFromDate(m.date): m};
     });
   }
 
-  // helper to generate yyyy-MM-dd key
+  /// Helper function to convert a DateTime into a string key (yyyy-MM-dd)
   String _dayKeyFromDate(DateTime date) {
     final y = date.year.toString();
     final m = date.month.toString().padLeft(2, '0');
@@ -41,19 +41,25 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     return '$y-$m-$d';
   }
 
-  // map mood value to emoji
-  String _emojiForValue(int value) {
+  /// Map a numeric mood value to a simple text label
+  String _labelForValue(int value) {
     switch (value) {
-      case 1: return '😞';
-      case 2: return '😐';
-      case 3: return '🙂';
-      case 4: return '😄';
-      case 5: return '🤩';
-      default: return '';
+      case 1:
+        return 'Very Low';
+      case 2:
+        return 'Low';
+      case 3:
+        return 'Neutral';
+      case 4:
+        return 'Good';
+      case 5:
+        return 'Great';
+      default:
+        return '';
     }
   }
 
-  // show dialog to view/edit note
+  /// Display a dialog to view or edit the note of a specific mood
   void _showNoteDialogForDay(DateTime day, Mood mood) {
     final controller = TextEditingController(text: mood.note ?? '');
     showDialog(
@@ -76,7 +82,9 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           TextButton(
             onPressed: () async {
               await _moodService.addOrUpdateMood(
-                day, mood.moodValue, controller.text.trim()
+                day,
+                mood.moodValue,
+                controller.text.trim(),
               );
               if (mounted) {
                 Navigator.pop(context);
@@ -98,6 +106,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Title section
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
             child: Text(
@@ -105,11 +114,14 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+
+          // Main calendar widget
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => _dayKeyFromDate(day) == _dayKeyFromDate(_focusedDay),
+            selectedDayPredicate: (day) =>
+                _dayKeyFromDate(day) == _dayKeyFromDate(_focusedDay),
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _focusedDay = focusedDay;
@@ -120,45 +132,53 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
               formatButtonVisible: false,
               titleCentered: true,
             ),
+
+            // Custom UI for calendar cells
             calendarBuilders: CalendarBuilders(
+              // Default day cell
               defaultBuilder: (context, day, _) {
                 final key = _dayKeyFromDate(day);
                 final Mood? mood = _moodByDay[key];
 
+                // No mood saved for this day
                 if (mood == null || mood.moodValue == 0) {
-                  return Center(child: Text('${day.day}', style: const TextStyle(fontSize: 14)));
+                  return Center(
+                    child: Text(
+                      '${day.day}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
                 }
 
+                // Mood exists for this day
                 return GestureDetector(
                   onTap: () => _showNoteDialogForDay(day, mood),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('${day.day}', style: const TextStyle(fontSize: 12)),
+                      Text(
+                        '${day.day}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       const SizedBox(height: 4),
-                      Text(_emojiForValue(mood.moodValue), style: const TextStyle(fontSize: 22)),
+                      Text(
+                        _labelForValue(mood.moodValue),
+                        style: const TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                 );
               },
+
+              // Today cell with border
               todayBuilder: (context, day, _) {
                 final key = _dayKeyFromDate(day);
                 final Mood? mood = _moodByDay[key];
 
-                if (mood == null || mood.moodValue == 0) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.deepPurple),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text('${day.day}', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
-                    ),
-                  );
-                }
-
                 return GestureDetector(
-                  onTap: () => _showNoteDialogForDay(day, mood),
+                  onTap:
+                      mood != null ? () => _showNoteDialogForDay(day, mood) : null,
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.deepPurple),
@@ -168,9 +188,23 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('${day.day}', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+                          Text(
+                            '${day.day}',
+                            style: const TextStyle(
+                              color: Colors.deepPurple,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(_emojiForValue(mood.moodValue), style: const TextStyle(fontSize: 22)),
+                          if (mood != null && mood.moodValue != 0)
+                            Text(
+                              _labelForValue(mood.moodValue),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.deepPurple,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                         ],
                       ),
                     ),

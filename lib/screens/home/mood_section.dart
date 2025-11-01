@@ -14,7 +14,7 @@ class _MoodSectionState extends State<MoodSection> {
   final _moodService = MoodService();
   final TextEditingController _noteController = TextEditingController();
 
-  // Mood options (emoji + value)
+  // Mood options list: emoji + numeric value
   final List<Map<String, dynamic>> _moodOptions = [
     {'emoji': '😞', 'value': 1},
     {'emoji': '😐', 'value': 2},
@@ -23,7 +23,7 @@ class _MoodSectionState extends State<MoodSection> {
     {'emoji': '🤩', 'value': 5},
   ];
 
-  int _tempSelected = 0; // giữ trạng thái chọn tạm thời (UI highlight ngay)
+  int? _tempSelected; // temporarily holds the selected mood value for UI highlight
 
   @override
   void dispose() {
@@ -31,9 +31,11 @@ class _MoodSectionState extends State<MoodSection> {
     super.dispose();
   }
 
-  // Save mood instantly when selected
+  /// Save the mood to Firestore and update local state for instant UI feedback
   Future<void> _saveMood(int value, String? note) async {
-    setState(() => _tempSelected = value); // update UI ngay lập tức
+    setState(() {
+      _tempSelected = value; // immediately update highlight in UI
+    });
     await _moodService.addOrUpdateMood(widget.selectedDay, value, note);
   }
 
@@ -43,12 +45,18 @@ class _MoodSectionState extends State<MoodSection> {
       color: Colors.grey[50],
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: StreamBuilder<Mood?>(
+        // Listen for real-time updates for the selected day
         stream: _moodService.getMoodForDay(widget.selectedDay),
         builder: (context, snapshot) {
           final currentMood = snapshot.data;
-          final currentValue = currentMood?.moodValue ?? _tempSelected;
 
-          // Keep the note field synced
+          // Determine which mood value to highlight
+          // - Use Firestore mood if available
+          // - Use temporary mood only if it matches the selected day
+          final currentValue = currentMood?.moodValue ??
+              _tempSelected; // fallback to temp only if no data yet
+
+          // Keep note text synced with Firestore data
           if (currentMood?.note != null &&
               _noteController.text != currentMood!.note) {
             _noteController.text = currentMood.note!;
@@ -57,7 +65,7 @@ class _MoodSectionState extends State<MoodSection> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ----- Section title -----
+              // --- Section Title ---
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
                 child: Text(
@@ -66,13 +74,13 @@ class _MoodSectionState extends State<MoodSection> {
                 ),
               ),
 
-              // ----- Emoji row -----
+              // --- Mood Emoji Row ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: _moodOptions.map((m) {
-                    final selected = currentValue == m['value'];
+                    final bool selected = currentValue == m['value'];
                     return GestureDetector(
                       onTap: () => _saveMood(m['value'], _noteController.text),
                       child: AnimatedContainer(
@@ -100,7 +108,7 @@ class _MoodSectionState extends State<MoodSection> {
 
               const SizedBox(height: 16),
 
-              // ----- Optional note input -----
+              // --- Optional Note Input ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: TextField(
@@ -113,7 +121,7 @@ class _MoodSectionState extends State<MoodSection> {
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.save, color: Colors.deepPurple),
                       onPressed: () =>
-                          _saveMood(currentValue, _noteController.text),
+                          _saveMood(currentValue ?? 0, _noteController.text),
                     ),
                   ),
                   minLines: 1,
@@ -125,5 +133,18 @@ class _MoodSectionState extends State<MoodSection> {
         },
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant MoodSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When the selected day changes (e.g., user switches calendar day),
+    // reset the temporary selection so that highlight updates correctly.
+    if (oldWidget.selectedDay != widget.selectedDay) {
+      setState(() {
+        _tempSelected = null;
+        _noteController.clear();
+      });
+    }
   }
 }
