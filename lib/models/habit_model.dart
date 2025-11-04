@@ -4,10 +4,12 @@ class Habit {
   final String id;
   final String userId;
   final String name;
-  final DateTime startDate; // when the habit starts
-  final DateTime? endDate; // when the habit ends (can be null)
-  final List<String> daysOfWeek; // which days in a week this habit repeats
-  final DateTime createdAt; // when it was created
+  final DateTime startDate;
+  final DateTime? endDate;
+  final List<String> daysOfWeek;
+  final List<int> daysOfMonth;
+  final String frequency; // "daily", "weekly", or "monthly"
+  final DateTime createdAt;
 
   Habit({
     required this.id,
@@ -16,10 +18,12 @@ class Habit {
     required this.startDate,
     required this.endDate,
     required this.daysOfWeek,
+    required this.daysOfMonth,
+    required this.frequency,
     required this.createdAt,
   });
 
-  // convert data from firestore to Habit object
+  /// Convert a Firestore document into a Habit object.
   factory Habit.fromMap(Map<String, dynamic> data, String id) {
     return Habit(
       id: id,
@@ -30,11 +34,13 @@ class Habit {
           ? (data['endDate'] as Timestamp).toDate()
           : null,
       daysOfWeek: List<String>.from(data['daysOfWeek'] ?? []),
+      daysOfMonth: List<int>.from(data['daysOfMonth'] ?? []),
+      frequency: data['frequency'] ?? 'daily',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
   }
 
-  // convert Habit object to map for firestore
+  /// Convert a Habit object back into a map for Firestore storage.
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -42,6 +48,8 @@ class Habit {
       'startDate': startDate,
       'endDate': endDate,
       'daysOfWeek': daysOfWeek,
+      'daysOfMonth': daysOfMonth,
+      'frequency': frequency,
       'createdAt': createdAt,
     };
   }
