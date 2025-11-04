@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/habit_service.dart';
-import '../../models/habit_model.dart';
+import '../models/habit_model.dart';
 
+/// Bottom sheet for adding or editing a habit
+/// Now supports daily / weekly / monthly frequencies
 class AddHabitBottomSheet extends StatefulWidget {
   final Habit? habitToEdit;
   const AddHabitBottomSheet({super.key, this.habitToEdit});
@@ -16,7 +18,9 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
 
   DateTime? _startDate;
   DateTime? _endDate;
-  List<String> _selectedDays = [];
+  String _frequency = 'daily'; // default frequency
+  List<String> _selectedDaysOfWeek = [];
+  List<int> _selectedDaysOfMonth = [];
 
   final List<String> _daysOfWeek = [
     'Mon',
@@ -32,10 +36,14 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.habitToEdit?.name ?? '');
+
     if (widget.habitToEdit != null) {
-      _startDate = widget.habitToEdit!.startDate;
-      _endDate = widget.habitToEdit!.endDate;
-      _selectedDays = List.from(widget.habitToEdit!.daysOfWeek);
+      final h = widget.habitToEdit!;
+      _startDate = h.startDate;
+      _endDate = h.endDate;
+      _frequency = h.frequency;
+      _selectedDaysOfWeek = List.from(h.daysOfWeek);
+      _selectedDaysOfMonth = List.from(h.daysOfMonth);
     }
   }
 
@@ -45,7 +53,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     super.dispose();
   }
 
-  // pick date from date picker
+  /// Pick a date using Flutter's date picker
   Future<void> _pickDate({required bool isStart}) async {
     final now = DateTime.now();
     final initialDate = isStart ? (_startDate ?? now) : (_endDate ?? now);
@@ -66,10 +74,10 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     }
   }
 
-  // save habit to Firestore
+  /// Save or update the habit
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty || _startDate == null || _selectedDays.isEmpty) return;
+    if (name.isEmpty || _startDate == null) return;
 
     if (widget.habitToEdit != null) {
       await _habitService.updateHabit(
@@ -77,18 +85,68 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
         name: name,
         startDate: _startDate,
         endDate: _endDate,
-        daysOfWeek: _selectedDays,
+        frequency: _frequency,
+        daysOfWeek: _frequency == 'weekly' ? _selectedDaysOfWeek : [],
+        daysOfMonth: _frequency == 'monthly' ? _selectedDaysOfMonth : [],
       );
     } else {
       await _habitService.addHabit(
         name: name,
         startDate: _startDate!,
         endDate: _endDate,
-        daysOfWeek: _selectedDays,
+        frequency: _frequency,
+        daysOfWeek: _frequency == 'weekly' ? _selectedDaysOfWeek : [],
+        daysOfMonth: _frequency == 'monthly' ? _selectedDaysOfMonth : [],
       );
     }
 
     if (context.mounted) Navigator.pop(context);
+  }
+
+  /// UI to select days of the week (for weekly habits)
+  Widget _buildWeeklySelector() {
+    return Wrap(
+      spacing: 6,
+      children: _daysOfWeek.map((day) {
+        return ChoiceChip(
+          label: Text(day),
+          selected: _selectedDaysOfWeek.contains(day),
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _selectedDaysOfWeek.add(day);
+              } else {
+                _selectedDaysOfWeek.remove(day);
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  /// UI to select days of the month (for monthly habits)
+  Widget _buildMonthlySelector() {
+    return Wrap(
+      spacing: 6,
+      children: List.generate(31, (i) {
+        final day = i + 1;
+        final selected = _selectedDaysOfMonth.contains(day);
+        return ChoiceChip(
+          label: Text(day.toString()),
+          selected: selected,
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _selectedDaysOfMonth.add(day);
+              } else {
+                _selectedDaysOfMonth.remove(day);
+              }
+            });
+          },
+        );
+      }),
+    );
   }
 
   @override
@@ -106,13 +164,14 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Title
             Text(
               isEdit ? 'Edit Habit' : 'Add Habit',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
-            // habit name
+            // Name field
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -122,7 +181,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
             ),
             const SizedBox(height: 12),
 
-            // start and end date
+            // Start & End date picker
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -148,43 +207,30 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
             ),
             const SizedBox(height: 8),
 
-            // select days of week
-            Wrap(
-              spacing: 6,
-              children: [
-                ChoiceChip(
-                  label: const Text('Everyday'),
-                  selected: _selectedDays.length == 7,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedDays = List.from(_daysOfWeek);
-                      } else {
-                        _selectedDays.clear();
-                      }
-                    });
-                  },
-                ),
-                ..._daysOfWeek.map((day) {
-                  return ChoiceChip(
-                    label: Text(day),
-                    selected: _selectedDays.contains(day),
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedDays.add(day);
-                        } else {
-                          _selectedDays.remove(day);
-                        }
-                      });
-                    },
-                  );
-                }),
+            // Frequency selector
+            DropdownButtonFormField<String>(
+              value: _frequency,
+              decoration: const InputDecoration(
+                labelText: 'Frequency',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
               ],
+              onChanged: (val) {
+                setState(() => _frequency = val ?? 'daily');
+              },
             ),
             const SizedBox(height: 12),
 
-            // save button
+            // Conditional day selectors
+            if (_frequency == 'weekly') _buildWeeklySelector(),
+            if (_frequency == 'monthly') _buildMonthlySelector(),
+            const SizedBox(height: 16),
+
+            // Save button
             ElevatedButton(
               onPressed: _save,
               child: Text(isEdit ? 'Update' : 'Save'),
