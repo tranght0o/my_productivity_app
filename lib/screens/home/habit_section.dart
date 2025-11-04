@@ -4,7 +4,7 @@ import '../../services/habit_log_service.dart';
 import '../../models/habit_model.dart';
 import '../../models/habit_log_model.dart';
 import '../../widgets/add_habit_bottom_sheet.dart';
-
+import '../../utils/habit_utils.dart'; // for date validation and filtering logic
 
 class HabitSection extends StatefulWidget {
   final DateTime selectedDay;
@@ -18,6 +18,7 @@ class _HabitSectionState extends State<HabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
 
+  // Show edit/delete options for a habit
   void _showHabitOptions(Habit habit) {
     showModalBottomSheet(
       context: context,
@@ -69,6 +70,8 @@ class _HabitSectionState extends State<HabitSection> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
+
+          // Stream all habits for the current user
           StreamBuilder<List<Habit>>(
             stream: _habitService.getHabits(),
             builder: (context, snapshot) {
@@ -84,6 +87,7 @@ class _HabitSectionState extends State<HabitSection> {
                 );
               }
 
+              // Listen to habit logs for the selected day
               return StreamBuilder<List<HabitLog>>(
                 stream: _habitLogService.getLogsForDay(widget.selectedDay),
                 builder: (context, logSnap) {
@@ -93,6 +97,11 @@ class _HabitSectionState extends State<HabitSection> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Column(
                       children: habits.map((habit) {
+                        // Check if this habit should be shown on the selected day
+                        final isActive = HabitUtils.isHabitActiveOnDay(
+                            habit, widget.selectedDay);
+
+                        // Find the existing log for this habit (if any)
                         final log = logs.firstWhere(
                           (l) => l.habitId == habit.id,
                           orElse: () => HabitLog(
@@ -104,6 +113,29 @@ class _HabitSectionState extends State<HabitSection> {
                           ),
                         );
 
+                        // If habit is inactive on this day (outside date range or not scheduled)
+                        if (!isActive) {
+                          return Opacity(
+                            opacity: 0.4,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.block,
+                                  color: Colors.grey,
+                                ),
+                                title: Text(habit.name),
+                                subtitle: const Text("Not active on this day"),
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Display active habits
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 6),
                           decoration: BoxDecoration(
@@ -123,8 +155,10 @@ class _HabitSectionState extends State<HabitSection> {
                                 log.done
                                     ? Icons.check_circle
                                     : Icons.circle_outlined,
-                                color: log.done ? Colors.deepPurple : Colors.grey,
+                                color:
+                                    log.done ? Colors.deepPurple : Colors.grey,
                               ),
+                              // Toggle completion state for this habit
                               onPressed: () => _habitLogService.toggleHabit(
                                 habit.id,
                                 widget.selectedDay,
@@ -138,7 +172,10 @@ class _HabitSectionState extends State<HabitSection> {
                               ),
                             ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.more_vert, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.grey,
+                              ),
                               onPressed: () => _showHabitOptions(habit),
                             ),
                           ),

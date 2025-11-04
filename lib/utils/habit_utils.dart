@@ -1,28 +1,28 @@
 import '../models/habit_model.dart';
 
-/// Utility functions to help with habit logic
-/// (used in both HabitSection and LibraryHabitSection)
+/// Utility class for handling habit-related logic.
+/// Used by both HabitSection and LibraryHabitSection.
 class HabitUtils {
-  /// Check if a given [day] should show this [habit]
-  /// based on startDate, endDate, frequency, and repeat days.
+  /// Determine if a given [habit] should appear on [day].
+  /// It respects startDate, endDate, and frequency rules.
   static bool isHabitActiveOnDay(Habit habit, DateTime day) {
-    // Check start and end date range
+    // 1. Check startDate and endDate boundaries
     if (day.isBefore(habit.startDate)) return false;
     if (habit.endDate != null && day.isAfter(habit.endDate!)) return false;
 
-    // Match based on frequency type
+    // 2. Frequency-based logic
     switch (habit.frequency) {
       case 'daily':
-        // Daily habits are active every day within range
+        // Daily habits occur every day within range
         return true;
 
       case 'weekly':
-        // For weekly habits → match weekday name
-        final weekdayName = _weekdayString(day.weekday);
-        return habit.daysOfWeek.contains(weekdayName);
+        // Weekly habits depend on day of week, e.g. Mon, Wed, Fri
+        final weekday = _weekdayString(day.weekday);
+        return habit.daysOfWeek.contains(weekday);
 
       case 'monthly':
-        // For monthly habits → match specific date number
+        // Monthly habits repeat on specific days (1, 15, etc.)
         return habit.daysOfMonth.contains(day.day);
 
       default:
@@ -30,7 +30,7 @@ class HabitUtils {
     }
   }
 
-  /// Helper: convert weekday number (1-7) to string like "Mon", "Tue", etc.
+  /// Helper: convert weekday number (1–7) to a short string like "Mon", "Tue", etc.
   static String _weekdayString(int weekday) {
     switch (weekday) {
       case DateTime.monday:
@@ -50,5 +50,34 @@ class HabitUtils {
       default:
         return '';
     }
+  }
+
+  /// Calculate completion percentage for a given [habit] in a month.
+  /// [doneDays] is a list of completed day numbers.
+  static double calculateCompletion({
+    required Habit habit,
+    required List<int> doneDays,
+    required int totalDays,
+  }) {
+    if (totalDays == 0) return 0;
+    final completed = doneDays.length;
+    return (completed / totalDays) * 100;
+  }
+
+  /// Calculate streak count for a habit based on consecutive days done.
+  /// [sortedDays] should be a sorted list of completed DateTimes.
+  static int calculateStreak(List<DateTime> sortedDays) {
+    if (sortedDays.isEmpty) return 0;
+    int streak = 1;
+
+    for (int i = sortedDays.length - 1; i > 0; i--) {
+      final diff = sortedDays[i].difference(sortedDays[i - 1]).inDays;
+      if (diff == 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 }
