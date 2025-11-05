@@ -5,7 +5,10 @@ import '../../models/habit_model.dart';
 import '../../models/habit_log_model.dart';
 import '../../services/habit_service.dart';
 import '../../services/habit_log_service.dart';
+import '../../utils/habit_utils.dart'; // helper for date/frequency logic
 
+/// This widget shows a list of all user habits in a monthly calendar view.
+/// Each card shows completion % and streak for that habit in the selected month.
 class LibraryHabitSection extends StatefulWidget {
   final String searchQuery;
   const LibraryHabitSection({super.key, this.searchQuery = ''});
@@ -18,8 +21,9 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
 
-  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
-  Map<String, List<HabitLog>> _logs = {};
+  DateTime _selectedMonth =
+      DateTime(DateTime.now().year, DateTime.now().month); // month picker
+  Map<String, List<HabitLog>> _logs = {}; // habitId -> list of logs
 
   @override
   void initState() {
@@ -27,6 +31,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     _fetchAllLogs();
   }
 
+  /// Fetch all logs for current month and group by habitId
   Future<void> _fetchAllLogs() async {
     final start = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
     final end = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
@@ -40,6 +45,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     });
   }
 
+  /// Let user pick a new month
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -59,6 +65,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       stream: _habitService.getHabits(),
       builder: (context, snapshot) {
         final habits = snapshot.data ?? [];
+
+        // Filter by search query
         final filteredHabits = widget.searchQuery.isEmpty
             ? habits
             : habits
@@ -73,6 +81,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
         return Column(
           children: [
+            // month picker header
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
@@ -98,6 +107,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                 ],
               ),
             ),
+
+            // show habits in a scrollable list
             Expanded(
               child: ListView.builder(
                 itemCount: filteredHabits.length,
@@ -114,6 +125,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Build a card that shows one habit's monthly view
   Widget _buildHabitCalendar(Habit habit, List<HabitLog> logs) {
     final streak = _calculateStreak(logs);
     final completion = _calculateCompletion(habit, logs);
@@ -135,6 +147,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // habit title
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -146,6 +159,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
               ),
             ),
           ),
+
+          // calendar grid for that habit
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -154,13 +169,13 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             availableGestures: AvailableGestures.none,
             headerVisible: false,
             daysOfWeekVisible: true,
-            calendarStyle: const CalendarStyle(
-              outsideDaysVisible: false,
-            ),
+            calendarStyle: const CalendarStyle(outsideDaysVisible: false),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
-                final weekdayStr = _weekdayString(day.weekday);
-                final isHabitDay = habit.daysOfWeek.contains(weekdayStr);
+                // only show valid habit days
+                final isValid = isHabitActiveOnDate(habit, day);
+
+                // find log for that day
                 final log = logs.firstWhere(
                   (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
                   orElse: () => HabitLog(
@@ -172,8 +187,18 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   ),
                 );
 
+                // style and color rules
+                final bgColor = !isValid
+                    ? Colors.grey.withOpacity(0.05)
+                    : (log.done
+                        ? Colors.deepPurple.withOpacity(0.7)
+                        : Colors.deepPurple.withOpacity(0.1));
+
+                final textColor =
+                    isValid ? Colors.black : Colors.grey.withOpacity(0.4);
+
                 return GestureDetector(
-                  onTap: isHabitDay
+                  onTap: isValid
                       ? () async {
                           await _habitLogService.toggleHabit(
                             habit.id,
@@ -186,19 +211,14 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   child: Container(
                     margin: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: log.done
-                          ? Colors.deepPurple.withOpacity(0.7)
-                          : (isHabitDay
-                              ? Colors.deepPurple.withOpacity(0.1)
-                              : Colors.grey.withOpacity(0.05)),
+                      color: bgColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       '${day.day}',
                       style: TextStyle(
-                        color:
-                            isHabitDay ? Colors.black : Colors.grey.shade400,
+                        color: textColor,
                         fontWeight:
                             log.done ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -208,7 +228,10 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
               },
             ),
           ),
+
           const SizedBox(height: 8),
+
+          // stats row: streak + completion %
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
             child: Row(
@@ -238,11 +261,13 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Count consecutive days done from the most recent backwards
   int _calculateStreak(List<HabitLog> logs) {
     if (logs.isEmpty) return 0;
     logs.sort((a, b) => a.dayKey.compareTo(b.dayKey));
     int streak = 0;
     DateTime today = DateTime.now();
+
     for (int i = logs.length - 1; i >= 0; i--) {
       final parts = logs[i].dayKey.split('-');
       final date = DateTime(
@@ -250,8 +275,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
         int.parse(parts[1]),
         int.parse(parts[2]),
       );
-      if (!logs[i].done) continue;
-      if (date.isAfter(today)) continue;
+      if (!logs[i].done || date.isAfter(today)) continue;
+
       final diff = today.difference(date).inDays;
       if (diff == streak) {
         streak++;
@@ -262,43 +287,26 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     return streak;
   }
 
+  /// Calculate completion percentage for current month
   double _calculateCompletion(Habit habit, List<HabitLog> logs) {
-    final daysInMonth = DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);
+    final daysInMonth =
+        DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);
     int totalDays = 0;
     int doneDays = 0;
 
     for (int d = 1; d <= daysInMonth; d++) {
       final date = DateTime(_selectedMonth.year, _selectedMonth.month, d);
-      final weekdayStr = _weekdayString(date.weekday);
-      if (habit.daysOfWeek.contains(weekdayStr)) {
-        totalDays++;
-        final match = logs.any((l) => l.dayKey == "${date.year}-${date.month}-${date.day}" && l.done);
-        if (match) doneDays++;
-      }
+      if (!isHabitActiveOnDate(habit, date)) continue;
+
+      totalDays++;
+      final match = logs.any(
+        (l) =>
+            l.dayKey == "${date.year}-${date.month}-${date.day}" && l.done,
+      );
+      if (match) doneDays++;
     }
 
     if (totalDays == 0) return 0;
     return (doneDays / totalDays) * 100;
-  }
-
-  String _weekdayString(int weekday) {
-    switch (weekday) {
-      case DateTime.monday:
-        return "Mon";
-      case DateTime.tuesday:
-        return "Tue";
-      case DateTime.wednesday:
-        return "Wed";
-      case DateTime.thursday:
-        return "Thu";
-      case DateTime.friday:
-        return "Fri";
-      case DateTime.saturday:
-        return "Sat";
-      case DateTime.sunday:
-        return "Sun";
-      default:
-        return "";
-    }
   }
 }
