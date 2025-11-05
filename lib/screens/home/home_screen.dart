@@ -51,11 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.mood),
-                title: const Text('Mood'),
-                onTap: () {},
-              ),
             ],
           ),
         );
