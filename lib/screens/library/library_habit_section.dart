@@ -7,8 +7,8 @@ import '../../services/habit_service.dart';
 import '../../services/habit_log_service.dart';
 import '../../utils/habit_utils.dart'; // helper for date/frequency logic
 
-/// This widget shows a list of all user habits in a monthly calendar view.
-/// Each card shows completion % and streak for that habit in the selected month.
+/// Displays all habits in a monthly calendar layout.
+/// Each habit card shows its calendar, streak, and completion stats.
 class LibraryHabitSection extends StatefulWidget {
   final String searchQuery;
   const LibraryHabitSection({super.key, this.searchQuery = ''});
@@ -22,8 +22,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
   final _habitLogService = HabitLogService();
 
   DateTime _selectedMonth =
-      DateTime(DateTime.now().year, DateTime.now().month); // month picker
-  Map<String, List<HabitLog>> _logs = {}; // habitId -> list of logs
+      DateTime(DateTime.now().year, DateTime.now().month); // current selected month
+  Map<String, List<HabitLog>> _logs = {}; // maps habitId -> list of logs
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     _fetchAllLogs();
   }
 
-  /// Fetch all logs for current month and group by habitId
+  /// Fetch all logs for this month and group them by habitId
   Future<void> _fetchAllLogs() async {
     final start = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
     final end = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
@@ -45,7 +45,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     });
   }
 
-  /// Let user pick a new month
+  /// Allow user to pick a different month
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -66,7 +66,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       builder: (context, snapshot) {
         final habits = snapshot.data ?? [];
 
-        // Filter by search query
+        // Apply search filter if query is not empty
         final filteredHabits = widget.searchQuery.isEmpty
             ? habits
             : habits
@@ -81,7 +81,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
         return Column(
           children: [
-            // month picker header
+            // Month picker header row
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
@@ -108,7 +108,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
               ),
             ),
 
-            // show habits in a scrollable list
+            // Scrollable list of habits
             Expanded(
               child: ListView.builder(
                 itemCount: filteredHabits.length,
@@ -125,7 +125,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
-  /// Build a card that shows one habit's monthly view
+  /// Build a calendar card for a single habit
   Widget _buildHabitCalendar(Habit habit, List<HabitLog> logs) {
     final streak = _calculateStreak(logs);
     final completion = _calculateCompletion(habit, logs);
@@ -147,7 +147,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // habit title
+          // Habit name
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -160,7 +160,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             ),
           ),
 
-          // calendar grid for that habit
+          // TableCalendar widget for this habit
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -172,10 +172,10 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             calendarStyle: const CalendarStyle(outsideDaysVisible: false),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
-                // only show valid habit days
-                final isValid = isHabitActiveOnDate(habit, day);
+                // Determine if this habit is active on the given day
+                final isValid = HabitUtils.isHabitActiveOnDay(habit, day);
 
-                // find log for that day
+                // Find log for that specific day
                 final log = logs.firstWhere(
                   (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
                   orElse: () => HabitLog(
@@ -187,7 +187,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   ),
                 );
 
-                // style and color rules
+                // Determine background and text color
                 final bgColor = !isValid
                     ? Colors.grey.withOpacity(0.05)
                     : (log.done
@@ -231,7 +231,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
           const SizedBox(height: 8),
 
-          // stats row: streak + completion %
+          // Stats: streak + completion percentage
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
             child: Row(
@@ -261,7 +261,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
-  /// Count consecutive days done from the most recent backwards
+  /// Calculate current streak (most recent consecutive days completed)
   int _calculateStreak(List<HabitLog> logs) {
     if (logs.isEmpty) return 0;
     logs.sort((a, b) => a.dayKey.compareTo(b.dayKey));
@@ -287,7 +287,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     return streak;
   }
 
-  /// Calculate completion percentage for current month
+  /// Calculate percentage of completed habit days within selected month
   double _calculateCompletion(Habit habit, List<HabitLog> logs) {
     final daysInMonth =
         DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);
@@ -296,7 +296,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
     for (int d = 1; d <= daysInMonth; d++) {
       final date = DateTime(_selectedMonth.year, _selectedMonth.month, d);
-      if (!isHabitActiveOnDate(habit, date)) continue;
+      if (!HabitUtils.isHabitActiveOnDay(habit, date)) continue;
 
       totalDays++;
       final match = logs.any(
