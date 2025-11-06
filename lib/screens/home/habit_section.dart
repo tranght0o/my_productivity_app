@@ -21,7 +21,7 @@ class _HabitSectionState extends State<HabitSection> {
   // Show edit/delete options for a habit
   void _showHabitOptions(Habit habit) {
     showModalBottomSheet(
-      context: context,
+      context: context, 
       builder: (context) {
         return SafeArea(
           child: Wrap(
@@ -81,9 +81,20 @@ class _HabitSectionState extends State<HabitSection> {
 
               final habits = snapshot.data!;
               if (habits.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('No habits yet'),
+                return SizedBox(
+                  height: 180,
+                  width: double.infinity,
+                  child: Center(
+                    child: Text(
+                      'Build your routine by adding a new habit',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
                 );
               }
 
