@@ -82,7 +82,7 @@ class _HabitSectionState extends State<HabitSection> {
               final habits = snapshot.data!;
               if (habits.isEmpty) {
                 return SizedBox(
-                  height: 180,
+                  height: 50,
                   width: double.infinity,
                   child: Center(
                     child: Text(

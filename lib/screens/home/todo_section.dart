@@ -75,9 +75,20 @@ class _TodoSectionState extends State<TodoSection> {
 
               final todos = snapshot.data!;
               if (todos.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('No tasks for this day'),
+                return SizedBox(
+                  height: 50,
+                  width: double.infinity,
+                  child: Center(
+                    child: Text(
+                      'Plan your day by adding a new task',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
                 );
               }
 
