@@ -21,7 +21,7 @@ class _HabitSectionState extends State<HabitSection> {
   // Show edit/delete options for a habit
   void _showHabitOptions(Habit habit) {
     showModalBottomSheet(
-      context: context, 
+      context: context,
       builder: (context) {
         return SafeArea(
           child: Wrap(
@@ -104,14 +104,35 @@ class _HabitSectionState extends State<HabitSection> {
                 builder: (context, logSnap) {
                   final logs = logSnap.data ?? [];
 
+                  // Filter only active habits
+                  final activeHabits = habits.where((habit) {
+                    return HabitUtils.isHabitActiveOnDay(
+                        habit, widget.selectedDay);
+                  }).toList();
+
+                  // If there are no active habits for the selected day
+                  if (activeHabits.isEmpty) {
+                    return SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: Center(
+                        child: Text(
+                          'Build your routine by adding a new habit',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Column(
-                      children: habits.map((habit) {
-                        // Check if this habit should be shown on the selected day
-                        final isActive = HabitUtils.isHabitActiveOnDay(
-                            habit, widget.selectedDay);
-
+                      children: activeHabits.map((habit) {
                         // Find the existing log for this habit (if any)
                         final log = logs.firstWhere(
                           (l) => l.habitId == habit.id,
@@ -123,28 +144,6 @@ class _HabitSectionState extends State<HabitSection> {
                             done: false,
                           ),
                         );
-
-                        // If habit is inactive on this day (outside date range or not scheduled)
-                        if (!isActive) {
-                          return Opacity(
-                            opacity: 0.4,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: ListTile(
-                                leading: const Icon(
-                                  Icons.block,
-                                  color: Colors.grey,
-                                ),
-                                title: Text(habit.name),
-                                subtitle: const Text("Not active on this day"),
-                              ),
-                            ),
-                          );
-                        }
 
                         // Display active habits
                         return Container(
@@ -166,8 +165,9 @@ class _HabitSectionState extends State<HabitSection> {
                                 log.done
                                     ? Icons.check_circle
                                     : Icons.circle_outlined,
-                                color:
-                                    log.done ? Colors.deepPurple : Colors.grey,
+                                color: log.done
+                                    ? Colors.deepPurple
+                                    : Colors.grey,
                               ),
                               // Toggle completion state for this habit
                               onPressed: () => _habitLogService.toggleHabit(
