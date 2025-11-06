@@ -16,11 +16,11 @@ class _MoodSectionState extends State<MoodSection> {
 
   // Mood options list: emoji + numeric value
   final List<Map<String, dynamic>> _moodOptions = [
-    {'emoji': '😞', 'value': 1},
-    {'emoji': '😐', 'value': 2},
-    {'emoji': '🙂', 'value': 3},
-    {'emoji': '😄', 'value': 4},
-    {'emoji': '🤩', 'value': 5},
+    {'emoji': '😡', 'value': 1},
+    {'emoji': '😞', 'value': 2},
+    {'emoji': '😐', 'value': 3},
+    {'emoji': '😍', 'value': 4},
+    {'emoji': '😊', 'value': 5},
   ];
 
   int? _tempSelected; // temporarily holds the selected mood value for UI highlight
@@ -50,13 +50,8 @@ class _MoodSectionState extends State<MoodSection> {
         builder: (context, snapshot) {
           final currentMood = snapshot.data;
 
-          // Determine which mood value to highlight
-          // - Use Firestore mood if available
-          // - Use temporary mood only if it matches the selected day
-          final currentValue = currentMood?.moodValue ??
-              _tempSelected; // fallback to temp only if no data yet
+          final currentValue = currentMood?.moodValue ?? _tempSelected;
 
-          // Keep note text synced with Firestore data
           if (currentMood?.note != null &&
               _noteController.text != currentMood!.note) {
             _noteController.text = currentMood.note!;
@@ -74,7 +69,7 @@ class _MoodSectionState extends State<MoodSection> {
                 ),
               ),
 
-              // --- Mood Emoji Row ---
+              // --- Mood Emoji Row (Updated Style) ---
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -85,20 +80,25 @@ class _MoodSectionState extends State<MoodSection> {
                       onTap: () => _saveMood(m['value'], _noteController.text),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: selected ? Colors.deepPurple[50] : null,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: selected
-                                ? Colors.deepPurple
-                                : Colors.grey.shade300,
-                            width: selected ? 2 : 1,
-                          ),
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                          border: selected
+                              ? Border.all(
+                                  color: Colors.deepPurple, width: 2)
+                              : null,
                         ),
                         child: Text(
                           m['emoji'],
-                          style: const TextStyle(fontSize: 30),
+                          style: const TextStyle(fontSize: 28),
                         ),
                       ),
                     );
@@ -138,8 +138,6 @@ class _MoodSectionState extends State<MoodSection> {
   @override
   void didUpdateWidget(covariant MoodSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // When the selected day changes (e.g., user switches calendar day),
-    // reset the temporary selection so that highlight updates correctly.
     if (oldWidget.selectedDay != widget.selectedDay) {
       setState(() {
         _tempSelected = null;
