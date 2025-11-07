@@ -36,16 +36,21 @@ class _HabitChartState extends State<HabitChart> {
     final start = range['start']!;
     final end = range['end']!;
 
+
     final filtered = _logs.where((l) {
+      if (!l.done) return false;
       final parts = l.dayKey.split('-');
       final date = DateTime(
         int.parse(parts[0]),
         int.parse(parts[1]),
         int.parse(parts[2]),
       );
-      return l.done && date.isAfter(start) && date.isBefore(end);
+      final s = DateTime(start.year, start.month, start.day);
+      final e = DateTime(end.year, end.month, end.day);
+      return !date.isBefore(s) && !date.isAfter(e);
     }).toList();
 
+    // Group by day
     final map = <int, int>{};
     for (var l in filtered) {
       final day = int.parse(l.dayKey.split('-')[2]);
@@ -68,9 +73,10 @@ class _HabitChartState extends State<HabitChart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Habits Completed",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Habits Completed",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 TimeRangeDropdown(
                   selected: _selectedRange,
                   onChanged: (r) => setState(() => _selectedRange = r),
@@ -95,7 +101,9 @@ class _HabitChartState extends State<HabitChart> {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ),
@@ -106,16 +114,16 @@ class _HabitChartState extends State<HabitChart> {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ),
                           topTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide top
+                              sideTitles: SideTitles(showTitles: false)),
                           rightTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide right
+                              sideTitles: SideTitles(showTitles: false)),
                         ),
                         barGroups: sorted.entries.map((e) {
                           return BarChartGroupData(
