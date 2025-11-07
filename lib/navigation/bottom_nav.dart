@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/library/library_screen.dart';
-import '../screens/notification_screen.dart';
+import '../screens/insight_screen.dart';
 import '../screens/profile/profile_screen.dart';
 
 class BottomNav extends StatefulWidget {
@@ -17,7 +17,7 @@ class _BottomNavState extends State<BottomNav> {
   final List<Widget> _screens = const [
     HomeScreen(),
     LibraryScreen(),
-    NotificationScreen(),
+    InsightScreen(),
     ProfileScreen(),
   ];
 
@@ -52,7 +52,7 @@ class _BottomNavState extends State<BottomNav> {
           items: [
             _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
             _buildNavItem(Icons.photo_library_outlined, Icons.photo_library, 'Library', 1),
-            _buildNavItem(Icons.notifications_none, Icons.notifications, 'Notification', 2),
+            _buildNavItem(Icons.insights_outlined, Icons.insights, 'Insight', 2),
             _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
           ],
         ),

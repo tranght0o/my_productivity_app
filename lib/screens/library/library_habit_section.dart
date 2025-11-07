@@ -233,7 +233,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
           // Stats: streak + completion percentage
           Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
+            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 10, top: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
