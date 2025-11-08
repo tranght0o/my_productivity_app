@@ -34,10 +34,16 @@ class _TodoChartState extends State<TodoChart> {
     final start = range['start']!;
     final end = range['end']!;
 
-    final filtered = _todos
-        .where((t) => t.done && t.date.isAfter(start) && t.date.isBefore(end))
-        .toList();
+    // ✅ Filter: include start & end day, compare by date only
+    final filtered = _todos.where((t) {
+      if (!t.done) return false;
+      final date = DateTime(t.date.year, t.date.month, t.date.day);
+      final s = DateTime(start.year, start.month, start.day);
+      final e = DateTime(end.year, end.month, end.day);
+      return !date.isBefore(s) && !date.isAfter(e);
+    }).toList();
 
+    // Group by day
     final map = <int, int>{};
     for (var t in filtered) {
       final day = t.date.day;
@@ -60,9 +66,10 @@ class _TodoChartState extends State<TodoChart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("To-Do Completed",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(
+                  "To-Do Completed",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 TimeRangeDropdown(
                   selected: _selectedRange,
                   onChanged: (r) => setState(() => _selectedRange = r),
@@ -87,7 +94,9 @@ class _TodoChartState extends State<TodoChart> {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ),
@@ -98,16 +107,16 @@ class _TodoChartState extends State<TodoChart> {
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
                                 style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ),
                           topTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide top
+                              sideTitles: SideTitles(showTitles: false)),
                           rightTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide right
+                              sideTitles: SideTitles(showTitles: false)),
                         ),
                         barGroups: sorted.entries.map((e) {
                           return BarChartGroupData(
