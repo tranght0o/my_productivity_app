@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/app_user.dart';
 
 class AuthService {
   // Firebase authentication instance
@@ -25,6 +27,21 @@ class AuthService {
 
       // Update display name (user's name)
       await cred.user?.updateDisplayName(name);
+
+      // Create AppUser object
+      final newUser = AppUser(
+        uid: cred.user!.uid,
+        name: name,
+        email: email,
+        photoUrl: '', // default empty, can update later
+        createdAt: DateTime.now(),
+      );
+
+      // Save user info to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(newUser.uid)
+          .set(newUser.toMap());
 
       // Return null if success (no error message)
       return null;
