@@ -12,7 +12,7 @@ class VerifyEmailScreen extends StatefulWidget {
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
-  bool _isVerifed = false; // typo here
+  bool _isVerified = false;
   bool _loading = false;
 
   @override
@@ -22,11 +22,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   }
 
   Future<void> _checkVerification() async {
-    user?.reload(); // forgot await, async issue
+    await user?.reload();
     setState(() {
-      _isVerifed = user?.emailVerified ?? false; // typo variable
+      _isVerified = user?.emailVerified ?? false;
     });
-    if (_isVerifed) {
+    if (_isVerified) {
+      // Navigate to main app
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const BottomNav()),
