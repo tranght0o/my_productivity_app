@@ -28,6 +28,9 @@ class AuthService {
       // Update display name (user's name)
       await cred.user?.updateDisplayName(name);
 
+      // Send email verification
+      await cred.user?.sendEmailVerification();
+
       // Create AppUser object
       final newUser = AppUser(
         uid: cred.user!.uid,
@@ -60,7 +63,15 @@ class AuthService {
     required String password,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final cred = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+
+      // Check if email is verified
+      if (!cred.user!.emailVerified) {
+        await _auth.signOut();
+        return 'Please verify your email before logging in.';
+      }
+
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
