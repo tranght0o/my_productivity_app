@@ -31,7 +31,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData) {
           final user = snapshot.data!;
           // Check if email is verified
-          if (!user.emailVerified) {
+          if (user.emailVerified) {
             return const BottomNav();
           } else {
             return const VerifyEmailScreen();
@@ -39,7 +39,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // If no user is logged in, go to the login screen
-        return const BottomNav();
+        return const LoginScreen();
       },
     );
   }
