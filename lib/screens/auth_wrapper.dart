@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/bottom_nav.dart';
 import 'login_screen.dart';
+import 'verify_email_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -26,13 +27,19 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // If a user is logged in, go to the main app (BottomNav)
+        // If a user is logged in
         if (snapshot.hasData) {
-          return const BottomNav();
+          final user = snapshot.data!;
+          // Check if email is verified
+          if (!user.emailVerified) {
+            return const BottomNav();
+          } else {
+            return const VerifyEmailScreen();
+          }
         }
 
         // If no user is logged in, go to the login screen
-        return const LoginScreen();
+        return const BottomNav();
       },
     );
   }
