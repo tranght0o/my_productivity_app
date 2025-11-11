@@ -47,6 +47,22 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _resendVerification() async {
+    try {
+      final user = _authService.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Verification email sent. Please check your inbox.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sending verification email: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,12 +103,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 24),
                       if (_errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
+                        Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            if (_errorMessage == 'Please verify your email before logging in.')
+                              TextButton(
+                                onPressed: _resendVerification,
+                                child: const Text('Resend verification email'),
+                              ),
+                          ],
                         ),
                       TextFormField(
                         decoration: InputDecoration(
