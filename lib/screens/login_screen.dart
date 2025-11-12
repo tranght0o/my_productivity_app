@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart'; // Import for password reset screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,35 +19,43 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _errorMessage;
 
+  // Validate email field
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email cannot be empty';
     if (!value.contains('@')) return 'Invalid email';
     return null;
   }
 
+  // Validate password field
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password cannot be empty';
     if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
 
+  // Handle user login logic
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() {
       _loading = true;
       _errorMessage = null;
     });
 
     _formKey.currentState!.save();
+
+    // Attempt to sign in through AuthService
     final error = await _authService.signIn(email: _email, password: _password);
 
     setState(() => _loading = false);
 
+    // If there’s an error (e.g., wrong password or unverified email)
     if (error != null) {
       setState(() => _errorMessage = error);
     }
   }
 
+  // Resend verification email if the user hasn’t verified yet
   void _resendVerification() async {
     try {
       final user = _authService.currentUser;
@@ -67,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // Background gradient for visual appeal
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
@@ -89,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Title and subtitle
                       const Text(
                         'Welcome Back',
                         style: TextStyle(
@@ -102,6 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(color: Colors.black54),
                       ),
                       const SizedBox(height: 24),
+
+                      // Display error message if login fails
                       if (_errorMessage != null)
                         Column(
                           children: [
@@ -112,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: const TextStyle(color: Colors.red),
                               ),
                             ),
+                            // Show resend button if user hasn't verified email
                             if (_errorMessage == 'Please verify your email before logging in.')
                               TextButton(
                                 onPressed: _resendVerification,
@@ -119,6 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                           ],
                         ),
+
+                      // Email input field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Email',
@@ -131,6 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onSaved: (val) => _email = val!.trim(),
                       ),
                       const SizedBox(height: 12),
+
+                      // Password input field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Password',
@@ -142,7 +160,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         validator: _validatePassword,
                         onSaved: (val) => _password = val!.trim(),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+
+                      // Forgot Password link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Colors.blueAccent),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Login button (shows loading spinner while signing in)
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -166,6 +206,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Sign up redirect
                       TextButton(
                         onPressed: () {
                           Navigator.push(
