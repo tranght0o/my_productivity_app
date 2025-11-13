@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth_wrapper.dart';
+import 'my_account_screen.dart'; // Import MyAccountScreen
 
 class SettingsSection extends StatelessWidget {
   const SettingsSection({super.key});
@@ -48,7 +49,12 @@ class SettingsSection extends StatelessWidget {
             title: const Text("My Account"),
             subtitle: const Text("Manage your account settings"),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyAccountScreen()),
+              );
+            },
           ),
           const Divider(height: 1),
 
