@@ -91,6 +91,68 @@ class AuthService {
     }
   }
 
+  // Change password after re-authenticating
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        return 'No authenticated user found.';
+      }
+
+      // Re-authenticate before changing password
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // Update password
+      await user.updatePassword(newPassword);
+      return null; // success
+    } on FirebaseAuthException catch (e) {
+      return _mapError(e.code);
+    } catch (_) {
+      return 'Unexpected error changing password';
+    }
+  }
+
+  // Delete user account after re-authenticating
+  Future<String?> deleteAccount({
+    required String currentPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        return 'No authenticated user found.';
+      }
+
+      // Re-authenticate before deleting
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // Delete from Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+
+      // Delete from Firebase Authentication
+      await user.delete();
+
+      return null; // success
+    } on FirebaseAuthException catch (e) {
+      return _mapError(e.code);
+    } catch (_) {
+      return 'Unexpected error deleting account';
+    }
+  }
+
   // Sign out the current user
   Future<void> signOut() async {
     await _auth.signOut();
@@ -111,6 +173,8 @@ class AuthService {
         return 'User disabled';
       case 'weak-password':
         return 'Weak password';
+      case 'requires-recent-login':
+        return 'Please reauthenticate before performing this action.';
       case 'too-many-requests':
         return 'Too many requests. Try later';
       default:
