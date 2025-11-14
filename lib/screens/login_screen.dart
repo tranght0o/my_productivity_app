@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart'; // Import for password reset screen
+import '../main.dart'; // import navigatorKey
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -52,6 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
     // If there’s an error (e.g., wrong password or unverified email)
     if (error != null) {
       setState(() => _errorMessage = error);
+    } else {
+      //  Navigate using navigatorKey instead of context
+      navigatorKey.currentState!.pushReplacementNamed('/');
     }
   }
 
@@ -61,12 +65,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final user = _authService.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
           const SnackBar(content: Text('Verification email sent. Please check your inbox.')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
         SnackBar(content: Text('Error sending verification email: $e')),
       );
     }
