@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/auth_wrapper.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   // Ensure Flutter widgets are properly initialized before Firebase setup
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +28,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         scaffoldBackgroundColor: Colors.grey[100],
       ),
+      // Add navigatorKey to allow global navigation
+      navigatorKey: navigatorKey,
       // AuthWrapper automatically decides which screen to show
       home: const AuthWrapper(),
     );
