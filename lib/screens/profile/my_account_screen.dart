@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth_wrapper.dart';
 
 /// Screen that lets the user manage sensitive account settings
 /// - View their email
-/// - Change password
-/// - Delete their account
+/// - Change password via AuthService
+/// - Delete their account via AuthService
 class MyAccountScreen extends StatefulWidget {
   const MyAccountScreen({super.key});
 
@@ -22,21 +23,15 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
   bool _isLoading = false;
 
-  /// Helper method to show SnackBar messages
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Handles password change after reauthenticating the user
+  /// Change password using AuthService
   Future<void> _changePassword() async {
-    final user = _firebaseAuth.currentUser;
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
 
-    if (user == null) {
-      _showMessage('User not found.');
-      return;
-    }
     if (currentPassword.isEmpty || newPassword.isEmpty) {
       _showMessage('Please fill in both fields.');
       return;
@@ -45,21 +40,18 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final cred = EmailAuthProvider.credential(
-        email: user.email!,
-        password: currentPassword,
+      final error = await _authService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
       );
 
-      // Reauthenticate to confirm user identity
-      await user.reauthenticateWithCredential(cred);
-
-      // Change the password
-      await user.updatePassword(newPassword);
-      _showMessage('Password updated successfully.');
-      _currentPasswordController.clear();
-      _newPasswordController.clear();
-    } on FirebaseAuthException catch (e) {
-      _showMessage(e.message ?? 'Failed to change password.');
+      if (error != null) {
+        _showMessage(error);
+      } else {
+        _showMessage('Password updated successfully.');
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+      }
     } catch (_) {
       _showMessage('Unexpected error occurred.');
     } finally {
@@ -67,9 +59,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     }
   }
 
-  /// Handles account deletion from Firebase and Firestore
+  /// Delete account using AuthService
   Future<void> _deleteAccount() async {
+    final currentPasswordController = TextEditingController();
     final user = _firebaseAuth.currentUser;
+
     if (user == null) {
       _showMessage('No user logged in.');
       return;
@@ -79,7 +73,21 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to permanently delete your account?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your password to confirm deletion:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: currentPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
@@ -95,9 +103,22 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await _authService.deleteAccount();
-      _showMessage('Account deleted successfully.');
-    } on Exception catch (e) {
+      final error = await _authService.deleteAccount(
+        currentPassword: currentPasswordController.text.trim(),
+      );
+
+      if (error != null) {
+        _showMessage(error);
+      } else {
+        _showMessage('Account deleted successfully.');
+        if (!mounted) return;
+        await _authService.signOut();
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
       _showMessage(e.toString());
     } finally {
       setState(() => _isLoading = false);
@@ -121,22 +142,13 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Display email
-                  Text(
-                    'Email',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('Email', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 6),
-                  Text(
-                    user?.email ?? 'Unknown',
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
+                  Text(user?.email ?? 'Unknown', style: const TextStyle(fontSize: 16, color: Colors.grey)),
                   const Divider(height: 32),
 
                   // Change password section
-                  Text(
-                    'Change Password',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  Text('Change Password', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _currentPasswordController,
@@ -160,22 +172,14 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _changePassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
                       child: const Text('Update Password'),
                     ),
                   ),
                   const Divider(height: 40),
 
                   // Delete account section
-                  Text(
-                    'Danger Zone',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: Colors.red),
-                  ),
+                  Text('Danger Zone', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red)),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
