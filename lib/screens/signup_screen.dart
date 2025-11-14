@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../main.dart'; // import navigatorKey
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -61,12 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => _errorMessage = error);
     } else {
       // Optionally navigate to login or main app after signup
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
-      );
+      navigatorKey.currentState!.pushReplacementNamed('/');
     }
   }
 
@@ -189,8 +185,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       // Navigate to login
                       TextButton(
                         onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
+                          navigatorKey.currentState!.pushReplacement(
                             MaterialPageRoute(
                               builder: (_) => const LoginScreen(),
                             ),
