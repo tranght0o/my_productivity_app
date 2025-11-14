@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/bottom_nav.dart';
 import '../main.dart'; // import navigatorKey
 import 'login_screen.dart';
-import 'verify_email_screen.dart';
+
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -30,25 +30,12 @@ class AuthWrapper extends StatelessWidget {
 
         // If a user is logged in
         if (snapshot.hasData) {
-          final user = snapshot.data!;
-          // Check if email is verified
-          if (user.emailVerified) {
-            // Use navigatorKey to push BottomNav as root
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              navigatorKey.currentState!.pushReplacement(
-                MaterialPageRoute(builder: (_) => const BottomNav()),
-              );
-            });
-            return const SizedBox(); // placeholder while redirecting
-          } else {
-            // Use navigatorKey to push VerifyEmailScreen as root
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              navigatorKey.currentState!.pushReplacement(
-                MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
-              );
-            });
-            return const SizedBox(); // placeholder while redirecting
-          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            navigatorKey.currentState!.pushReplacement(
+              MaterialPageRoute(builder: (_) => const BottomNav()),
+            );
+          });
+          return const SizedBox(); // placeholder while redirecting
         }
 
         // If no user is logged in, go to the login screen

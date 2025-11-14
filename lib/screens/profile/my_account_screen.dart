@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../auth_wrapper.dart';
+import '../auth_wrapper.dart';
 
 /// Screen that lets the user manage sensitive account settings
 /// - View their email

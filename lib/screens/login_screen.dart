@@ -50,29 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = false);
 
-    // If there’s an error (e.g., wrong password or unverified email)
+    // If there’s an error (e.g., wrong password)
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
-      //  Navigate using navigatorKey instead of context
+      // Navigate using navigatorKey instead of context
       navigatorKey.currentState!.pushReplacementNamed('/');
-    }
-  }
-
-  // Resend verification email if the user hasn’t verified yet
-  void _resendVerification() async {
-    try {
-      final user = _authService.currentUser;
-      if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          const SnackBar(content: Text('Verification email sent. Please check your inbox.')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-        SnackBar(content: Text('Error sending verification email: $e')),
-      );
     }
   }
 
@@ -120,22 +103,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Display error message if login fails
                       if (_errorMessage != null)
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ),
-                            // Show resend button if user hasn't verified email
-                            if (_errorMessage == 'Please verify your email before logging in.')
-                              TextButton(
-                                onPressed: _resendVerification,
-                                child: const Text('Resend verification email'),
-                              ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
 
                       // Email input field

@@ -20,7 +20,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _loading = false;
   String? _errorMessage;
 
-  // Validation functions
   String? _validateName(String? value) {
     if (value == null || value.isEmpty) return 'Name cannot be empty';
     return null;
@@ -38,7 +37,6 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  // Signup function
   void _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -49,7 +47,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
     _formKey.currentState!.save();
 
-    // Call AuthService to create user and save to Firestore
     final error = await _authService.signUp(
       name: _name,
       email: _email,
@@ -61,7 +58,6 @@ class _SignupScreenState extends State<SignupScreen> {
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
-      // Optionally navigate to login or main app after signup
       navigatorKey.currentState!.pushReplacementNamed('/');
     }
   }
@@ -106,7 +102,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Show error message if exists
                       if (_errorMessage != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -116,7 +111,6 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
 
-                      // Name field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Name',
@@ -129,7 +123,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Email field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Email',
@@ -143,7 +136,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Password field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Password',
@@ -157,7 +149,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Signup button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -182,7 +173,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Navigate to login
                       TextButton(
                         onPressed: () {
                           navigatorKey.currentState!.pushReplacement(

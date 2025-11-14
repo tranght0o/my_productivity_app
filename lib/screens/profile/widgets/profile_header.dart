@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/user_service.dart';
-import '../../models/app_user.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import '../../../services/user_service.dart';
+import '../../../models/app_user.dart';
 
 /// ProfileHeader shows user's name and avatar, allows editing both
 class ProfileHeader extends StatefulWidget {
@@ -31,11 +29,8 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     }
   }
 
-  // Function to pick image from gallery
+  // Temporarily disabled image picking
   Future<String?> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) return pickedFile.path;
     return null;
   }
 
@@ -57,6 +52,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           children: [
             GestureDetector(
               onTap: () async {
+                // Image picking disabled
                 final path = await _pickImage();
                 if (path != null) {
                   newPhotoPath = path;
@@ -91,8 +87,8 @@ class _ProfileHeaderState extends State<ProfileHeader> {
 
               String? photoUrl;
               if (newPhotoPath != null) {
-                // TODO: upload newPhotoPath to Firebase Storage and get URL
-                photoUrl = newPhotoPath; // placeholder, implement actual upload
+                // Upload disabled
+                photoUrl = newPhotoPath;
               }
 
               await _userService.updateUser(

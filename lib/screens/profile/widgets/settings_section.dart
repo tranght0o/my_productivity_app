@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../auth_wrapper.dart';
-import 'my_account_screen.dart'; // Import MyAccountScreen
+import '../my_account_screen.dart'; // Import MyAccountScreen
 
 class SettingsSection extends StatelessWidget {
   const SettingsSection({super.key});
