@@ -17,6 +17,14 @@ class _MoodChartState extends State<MoodChart> {
   TimeRange _selectedRange = TimeRange.thisWeek;
   List<Mood> _moods = [];
 
+  final List<Map<String, dynamic>> _moodOptions = [
+    {'emoji': '😡', 'value': 1},
+    {'emoji': '😞', 'value': 2},
+    {'emoji': '😐', 'value': 3},
+    {'emoji': '😍', 'value': 4},
+    {'emoji': '😊', 'value': 5},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -28,28 +36,38 @@ class _MoodChartState extends State<MoodChart> {
     setState(() => _moods = moods);
   }
 
+  String _emojiForValue(double value) {
+    final match = _moodOptions.firstWhere(
+      (e) => e['value'] == value.toInt(),
+      orElse: () => {'emoji': '?'},
+    );
+    return match['emoji'];
+  }
+
   @override
   Widget build(BuildContext context) {
     final range = DateRangeHelper.getRange(_selectedRange);
     final start = range['start']!;
     final end = range['end']!;
+    final groupUnit = DateRangeHelper.getGroupUnit(_selectedRange, start, end);
 
-    final filtered =
-        _moods.where((m) => m.date.isAfter(start) && m.date.isBefore(end)).toList();
+    final filtered = _moods
+        .where((m) => !m.date.isBefore(start) && !m.date.isAfter(end))
+        .toList();
 
-    final map = <int, List<int>>{};
+    final Map<String, List<int>> grouped = {};
     for (var m in filtered) {
-      final day = m.date.day;
-      map.putIfAbsent(day, () => []).add(m.moodValue);
+      final key = DateRangeHelper.makeGroupKey(m.date, groupUnit);
+      grouped.putIfAbsent(key, () => []).add(m.moodValue);
     }
 
-    final avg = <int, double>{};
-    map.forEach((day, list) {
-      avg[day] = list.reduce((a, b) => a + b) / list.length;
+    final Map<String, double> avgMap = {};
+    grouped.forEach((key, list) {
+      avgMap[key] = list.reduce((a, b) => a + b) / list.length;
     });
 
     final sorted = Map.fromEntries(
-      avg.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+      avgMap.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
     );
 
     return Card(
@@ -89,30 +107,31 @@ class _MoodChartState extends State<MoodChart> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 22,
-                              getTitlesWidget: (value, meta) => Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
-                              ),
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= sorted.length) return const SizedBox();
+                                final key = sorted.keys.elementAt(index);
+                                return Text(
+                                  DateRangeHelper.formatLabel(key, groupUnit),
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                );
+                              },
                             ),
                           ),
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               interval: 1,
-                              getTitlesWidget: (value, meta) => Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
-                              ),
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  _emojiForValue(value),
+                                  style: const TextStyle(fontSize: 16),
+                                );
+                              },
                             ),
                           ),
-                          topTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide top
-                          rightTitles: AxisTitles(
-                              sideTitles:
-                                  SideTitles(showTitles: false)), // Hide right
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                         lineBarsData: [
                           LineChartBarData(
@@ -132,9 +151,14 @@ class _MoodChartState extends State<MoodChart> {
                               ),
                             ),
                             spots: sorted.entries
-                                .map((e) => FlSpot(
-                                    e.key.toDouble(), e.value.toDouble()))
-                                .toList(),
+                                .toList()
+                                .asMap()
+                                .entries
+                                .map((entry) {
+                              final xIndex = entry.key.toDouble();
+                              final yValue = entry.value.value;
+                              return FlSpot(xIndex, yValue);
+                            }).toList(),
                           )
                         ],
                       ),
