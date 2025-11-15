@@ -33,8 +33,9 @@ class _TodoChartState extends State<TodoChart> {
     final range = DateRangeHelper.getRange(_selectedRange);
     final start = range['start']!;
     final end = range['end']!;
+    final groupUnit = DateRangeHelper.getGroupUnit(_selectedRange, start, end);
 
-    // ✅ Filter: include start & end day, compare by date only
+    // Filter todos by done and date range
     final filtered = _todos.where((t) {
       if (!t.done) return false;
       final date = DateTime(t.date.year, t.date.month, t.date.day);
@@ -43,15 +44,18 @@ class _TodoChartState extends State<TodoChart> {
       return !date.isBefore(s) && !date.isAfter(e);
     }).toList();
 
-    // Group by day
-    final map = <int, int>{};
+    // Group by unit (day/month/year)
+    final Map<String, int> grouped = {};
     for (var t in filtered) {
-      final day = t.date.day;
-      map[day] = (map[day] ?? 0) + 1;
+      final date = DateTime(t.date.year, t.date.month, t.date.day);
+      final key = DateRangeHelper.makeGroupKey(date, groupUnit);
+      grouped[key] = (grouped[key] ?? 0) + 1;
     }
 
+    // Sort keys
     final sorted = Map.fromEntries(
-      map.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+      grouped.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key)),
     );
 
     return Card(
@@ -91,13 +95,15 @@ class _TodoChartState extends State<TodoChart> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 22,
-                              getTitlesWidget: (value, meta) => Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= sorted.length) return const SizedBox();
+                                final key = sorted.keys.elementAt(index);
+                                return Text(
+                                  DateRangeHelper.formatLabel(key, groupUnit),
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                );
+                              },
                             ),
                           ),
                           leftTitles: AxisTitles(
@@ -106,31 +112,25 @@ class _TodoChartState extends State<TodoChart> {
                               interval: 1,
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
                               ),
                             ),
                           ),
-                          topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
-                        barGroups: sorted.entries.map((e) {
+                        barGroups: sorted.entries.toList().asMap().entries.map((entry) {
+                          final xIndex = entry.key;
+                          final e = entry.value;
                           return BarChartGroupData(
-                            x: e.key,
+                            x: xIndex,
                             barRods: [
                               BarChartRodData(
                                 toY: e.value.toDouble(),
                                 width: 16,
                                 borderRadius: BorderRadius.circular(6),
                                 gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFD1C4E9),
-                                    Color(0xFF7E57C2)
-                                  ],
+                                  colors: [Color(0xFFD1C4E9), Color(0xFF7E57C2)],
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                 ),
