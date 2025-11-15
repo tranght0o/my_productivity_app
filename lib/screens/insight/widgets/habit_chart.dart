@@ -25,7 +25,7 @@ class _HabitChartState extends State<HabitChart> {
 
   Future<void> _loadLogs() async {
     final now = DateTime.now();
-    final start = now.subtract(const Duration(days: 30));
+    final start = now.subtract(const Duration(days: 365));
     final logs = await _habitLogService.getLogsBetween(start, now);
     setState(() => _logs = logs);
   }
@@ -35,8 +35,9 @@ class _HabitChartState extends State<HabitChart> {
     final range = DateRangeHelper.getRange(_selectedRange);
     final start = range['start']!;
     final end = range['end']!;
+    final groupUnit = DateRangeHelper.getGroupUnit(_selectedRange, start, end);
 
-
+    // Filter logs
     final filtered = _logs.where((l) {
       if (!l.done) return false;
       final parts = l.dayKey.split('-');
@@ -50,15 +51,22 @@ class _HabitChartState extends State<HabitChart> {
       return !date.isBefore(s) && !date.isAfter(e);
     }).toList();
 
-    // Group by day
-    final map = <int, int>{};
+    // Group by unit
+    final Map<String, int> grouped = {};
     for (var l in filtered) {
-      final day = int.parse(l.dayKey.split('-')[2]);
-      map[day] = (map[day] ?? 0) + 1;
+      final parts = l.dayKey.split('-');
+      final date = DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
+      );
+      final key = DateRangeHelper.makeGroupKey(date, groupUnit);
+      grouped[key] = (grouped[key] ?? 0) + 1;
     }
 
+    // Sort entries
     final sorted = Map.fromEntries(
-      map.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+      grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
     );
 
     return Card(
@@ -98,13 +106,15 @@ class _HabitChartState extends State<HabitChart> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 22,
-                              getTitlesWidget: (value, meta) => Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index < 0 || index >= sorted.length) return const SizedBox();
+                                final key = sorted.keys.elementAt(index);
+                                return Text(
+                                  DateRangeHelper.formatLabel(key, groupUnit),
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                );
+                              },
                             ),
                           ),
                           leftTitles: AxisTitles(
@@ -113,31 +123,25 @@ class _HabitChartState extends State<HabitChart> {
                               interval: 1,
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
                               ),
                             ),
                           ),
-                          topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
-                        barGroups: sorted.entries.map((e) {
+                        barGroups: sorted.entries.toList().asMap().entries.map((entry) {
+                          final xIndex = entry.key;
+                          final e = entry.value;
                           return BarChartGroupData(
-                            x: e.key,
+                            x: xIndex,
                             barRods: [
                               BarChartRodData(
                                 toY: e.value.toDouble(),
                                 width: 16,
                                 borderRadius: BorderRadius.circular(6),
                                 gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFD1C4E9),
-                                    Color(0xFF7E57C2)
-                                  ],
+                                  colors: [Color(0xFFD1C4E9), Color(0xFF7E57C2)],
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                 ),
