@@ -22,7 +22,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   void initState() {
     super.initState();
     if (user != null) {
-      // Listen realtime changes
+      // Listen realtime changes, but allow null if no document yet
       _userService.streamUser(user!.uid).listen((appUser) {
         setState(() => _appUser = appUser);
       });
@@ -36,10 +36,8 @@ class _ProfileHeaderState extends State<ProfileHeader> {
 
   // Function to edit name and avatar
   void _editProfile() async {
-    if (_appUser == null) return;
-
     final TextEditingController nameController =
-        TextEditingController(text: _appUser!.name);
+        TextEditingController(text: _appUser?.name ?? '');
 
     String? newPhotoPath;
 
@@ -52,7 +50,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           children: [
             GestureDetector(
               onTap: () async {
-                // Image picking disabled
                 final path = await _pickImage();
                 if (path != null) {
                   newPhotoPath = path;
@@ -60,11 +57,11 @@ class _ProfileHeaderState extends State<ProfileHeader> {
               },
               child: CircleAvatar(
                 radius: 40,
-                backgroundImage: _appUser!.photoUrl != null &&
+                backgroundImage: _appUser?.photoUrl != null &&
                         _appUser!.photoUrl!.isNotEmpty
                     ? NetworkImage(_appUser!.photoUrl!)
                     : null,
-                child: _appUser!.photoUrl == null || _appUser!.photoUrl!.isEmpty
+                child: _appUser?.photoUrl == null || _appUser!.photoUrl!.isEmpty
                     ? const Icon(Icons.person, size: 40)
                     : null,
               ),
@@ -87,10 +84,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
 
               String? photoUrl;
               if (newPhotoPath != null) {
-                // Upload disabled
                 photoUrl = newPhotoPath;
               }
 
+              // Create or update user document
               await _userService.updateUser(
                 user!.uid,
                 name: nameController.text.trim(),
@@ -115,12 +112,9 @@ class _ProfileHeaderState extends State<ProfileHeader> {
 
   @override
   Widget build(BuildContext context) {
-    if (_appUser == null) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
+    // Always show a placeholder if user document is null
+    final displayName = _appUser?.name ?? '';
+    final displayPhoto = _appUser?.photoUrl;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -133,18 +127,17 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white,
-            backgroundImage: _appUser!.photoUrl != null &&
-                    _appUser!.photoUrl!.isNotEmpty
-                ? NetworkImage(_appUser!.photoUrl!)
+            backgroundImage: displayPhoto != null && displayPhoto.isNotEmpty
+                ? NetworkImage(displayPhoto)
                 : null,
-            child: _appUser!.photoUrl == null || _appUser!.photoUrl!.isEmpty
+            child: displayPhoto == null || displayPhoto.isEmpty
                 ? const Icon(Icons.person, size: 40, color: Colors.deepPurple)
                 : null,
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
-              _appUser!.name,
+              displayName,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
