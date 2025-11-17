@@ -26,10 +26,18 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
 
   // Fetch all moods once
   Future<void> _fetchMoods() async {
-    final moods = await _moodService.getAllMoodsOnce();
-    setState(() {
-      _moodByDay = {for (var m in moods) _dayKeyFromDate(m.date): m};
-    });
+    try {
+      final moods = await _moodService.getAllMoodsOnce();
+      setState(() {
+        _moodByDay = {for (var m in moods) _dayKeyFromDate(m.date): m};
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load moods: $e')),
+        );
+      }
+    }
   }
 
   // Month picker
@@ -58,13 +66,13 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   String _emojiForValue(int value) {
     switch (value) {
       case 1:
-        return '😞';
+        return '😢';
       case 2:
-        return '😐';
+        return '😞';
       case 3:
-        return '🙂';
+        return '😐';
       case 4:
-        return '😄';
+        return '😊';
       case 5:
         return '🤩';
       default:
@@ -76,15 +84,15 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   String _labelForValue(int value) {
     switch (value) {
       case 1:
-        return 'Bad';
+        return 'Terrible';
       case 2:
-        return 'Okay';
+        return 'Bad';
       case 3:
-        return 'Good';
+        return 'Okay';
       case 4:
-        return 'Great';
+        return 'Good';
       case 5:
-        return 'Not Good';
+        return 'Amazing';
       default:
         return 'Mood';
     }
@@ -96,14 +104,24 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Note for ${_dayKeyFromDate(day)}'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Add or edit your note',
-            border: OutlineInputBorder(),
-          ),
+        title: Text('${_labelForValue(mood.moodValue)} - ${_dayKeyFromDate(day)}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _emojiForValue(mood.moodValue),
+              style: const TextStyle(fontSize: 48),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Add or edit your note',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -112,14 +130,22 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           ),
           TextButton(
             onPressed: () async {
-              await _moodService.addOrUpdateMood(
-                day,
-                mood.moodValue,
-                controller.text.trim(),
-              );
-              if (mounted) {
-                Navigator.pop(context);
-                _fetchMoods();
+              try {
+                await _moodService.addOrUpdateMood(
+                  day,
+                  mood.moodValue,
+                  controller.text.trim(),
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  _fetchMoods();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to save: $e')),
+                  );
+                }
               }
             },
             child: const Text('Save'),
@@ -133,7 +159,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- Header: month navigation ---
+        // Header: month navigation
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
           child: Row(
@@ -145,6 +171,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
                     _focusedDay = _selectedMonth;
                   });
+                  _fetchMoods();
                 },
                 icon: const Icon(Icons.chevron_left, color: Colors.black87),
               ),
@@ -165,6 +192,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
                     _focusedDay = _selectedMonth;
                   });
+                  _fetchMoods();
                 },
                 icon: const Icon(Icons.chevron_right, color: Colors.black87),
               ),
@@ -172,7 +200,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           ),
         ),
 
-        // --- Calendar ---
+        // Calendar
         Expanded(
           child: SingleChildScrollView(
             child: Container(
@@ -207,6 +235,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                     _focusedDay = focusedDay;
                     _selectedMonth = DateTime(focusedDay.year, focusedDay.month);
                   });
+                  _fetchMoods();
                 },
                 calendarFormat: CalendarFormat.month,
                 headerVisible: false,
@@ -245,13 +274,11 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           if (mood != null && mood.moodValue > 0) ...[
-                            // Emoji
                             Text(
                               _emojiForValue(mood.moodValue),
                               style: const TextStyle(fontSize: 32),
                             ),
                             const SizedBox(height: 4),
-                            // Label
                             Text(
                               _labelForValue(mood.moodValue),
                               style: TextStyle(
@@ -260,7 +287,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            // Date
                             Text(
                               '${day.day}',
                               style: TextStyle(
@@ -269,7 +295,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                               ),
                             ),
                           ] else ...[
-                            // Empty state with just "Mood" label and date
                             Container(
                               width: 32,
                               height: 32,

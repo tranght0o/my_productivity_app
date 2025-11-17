@@ -14,16 +14,16 @@ class _MoodSectionState extends State<MoodSection> {
   final _moodService = MoodService();
   final TextEditingController _noteController = TextEditingController();
 
-  // Mood options list: emoji + numeric value
+  //mood options and values
   final List<Map<String, dynamic>> _moodOptions = [
-    {'emoji': '😡', 'value': 1},
-    {'emoji': '😞', 'value': 2},
-    {'emoji': '😐', 'value': 3},
-    {'emoji': '😍', 'value': 4},
-    {'emoji': '😊', 'value': 5},
+    {'emoji': '😢', 'value': 1, 'label': 'Terrible'},
+    {'emoji': '😞', 'value': 2, 'label': 'Bad'},
+    {'emoji': '😐', 'value': 3, 'label': 'Okay'},
+    {'emoji': '😊', 'value': 4, 'label': 'Good'},
+    {'emoji': '🤩', 'value': 5, 'label': 'Amazing'},
   ];
 
-  int? _tempSelected; // temporarily holds the selected mood value for UI highlight
+  int? _tempSelected;
 
   @override
   void dispose() {
@@ -34,9 +34,26 @@ class _MoodSectionState extends State<MoodSection> {
   /// Save the mood to Firestore and update local state for instant UI feedback
   Future<void> _saveMood(int value, String? note) async {
     setState(() {
-      _tempSelected = value; // immediately update highlight in UI
+      _tempSelected = value;
     });
-    await _moodService.addOrUpdateMood(widget.selectedDay, value, note);
+    
+    try {
+      await _moodService.addOrUpdateMood(widget.selectedDay, value, note);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save mood: $e')),
+        );
+      }
+    }
+  }
+
+  String _getLabelForValue(int value) {
+    final mood = _moodOptions.firstWhere(
+      (m) => m['value'] == value,
+      orElse: () => {'label': 'Unknown'},
+    );
+    return mood['label'];
   }
 
   @override
@@ -45,11 +62,9 @@ class _MoodSectionState extends State<MoodSection> {
       color: Colors.grey[50],
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: StreamBuilder<Mood?>(
-        // Listen for real-time updates for the selected day
         stream: _moodService.getMoodForDay(widget.selectedDay),
         builder: (context, snapshot) {
           final currentMood = snapshot.data;
-
           final currentValue = currentMood?.moodValue ?? _tempSelected;
 
           if (currentMood?.note != null &&
@@ -60,16 +75,30 @@ class _MoodSectionState extends State<MoodSection> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Section Title ---
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                child: Text(
-                  'Mood',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // Section Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'How are you feeling?',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    if (currentValue != null)
+                      Text(
+                        _getLabelForValue(currentValue),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
-              // --- Mood Emoji Row (Updated Style) ---
+              // Mood Emoji Row
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -92,8 +121,7 @@ class _MoodSectionState extends State<MoodSection> {
                             ),
                           ],
                           border: selected
-                              ? Border.all(
-                                  color: Colors.deepPurple, width: 2)
+                              ? Border.all(color: Colors.deepPurple, width: 2)
                               : null,
                         ),
                         child: Text(
@@ -108,13 +136,14 @@ class _MoodSectionState extends State<MoodSection> {
 
               const SizedBox(height: 16),
 
-              // --- Optional Note Input ---
+              // Optional Note Input
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: TextField(
                   controller: _noteController,
                   decoration: InputDecoration(
                     labelText: 'Add a note (optional)',
+                    hintText: 'What made you feel this way?',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -126,6 +155,8 @@ class _MoodSectionState extends State<MoodSection> {
                   ),
                   minLines: 1,
                   maxLines: 3,
+                  onSubmitted: (_) =>
+                      _saveMood(currentValue ?? 0, _noteController.text),
                 ),
               ),
             ],
