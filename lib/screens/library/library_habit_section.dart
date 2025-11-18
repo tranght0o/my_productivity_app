@@ -5,10 +5,8 @@ import '../../models/habit_model.dart';
 import '../../models/habit_log_model.dart';
 import '../../services/habit_service.dart';
 import '../../services/habit_log_service.dart';
-import '../../utils/habit_utils.dart'; // helper for date/frequency logic
+import '../../utils/habit_utils.dart';
 
-/// Displays all habits in a monthly calendar layout.
-/// Each habit card shows its calendar, streak, and completion stats.
 class LibraryHabitSection extends StatefulWidget {
   final String searchQuery;
   const LibraryHabitSection({super.key, this.searchQuery = ''});
@@ -21,9 +19,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
 
-  DateTime _selectedMonth =
-      DateTime(DateTime.now().year, DateTime.now().month); // current selected month
-  Map<String, List<HabitLog>> _logs = {}; // maps habitId -> list of logs
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  Map<String, List<HabitLog>> _logs = {};
 
   @override
   void initState() {
@@ -31,21 +28,29 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     _fetchAllLogs();
   }
 
-  /// Fetch all logs for this month and group them by habitId
+  /// Fetch logs for selected month (OPTIMIZED)
   Future<void> _fetchAllLogs() async {
-    final start = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
-    final end = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+    try {
+      final logs = await _habitLogService.getLogsByMonth(
+        _selectedMonth.year,
+        _selectedMonth.month,
+      );
 
-    final query = await _habitLogService.getLogsBetween(start, end);
-    setState(() {
-      _logs = {};
-      for (var log in query) {
-        _logs.putIfAbsent(log.habitId, () => []).add(log);
+      setState(() {
+        _logs = {};
+        for (var log in logs) {
+          _logs.putIfAbsent(log.habitId, () => []).add(log);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load habit logs: $e')),
+        );
       }
-    });
+    }
   }
 
-  /// Allow user to pick a different month
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -66,7 +71,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       builder: (context, snapshot) {
         final habits = snapshot.data ?? [];
 
-        // Apply search filter if query is not empty
         final filteredHabits = widget.searchQuery.isEmpty
             ? habits
             : habits
@@ -76,15 +80,19 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                 .toList();
 
         if (filteredHabits.isEmpty) {
-          return const Center(child: Text("No habits found"));
+          return const Center(
+            child: Text(
+              'No habits found',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          );
         }
 
         return Column(
           children: [
-            // Month picker header row
+            // Month picker header
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -108,7 +116,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
               ),
             ),
 
-            // Scrollable list of habits
+            // Habits list
             Expanded(
               child: ListView.builder(
                 itemCount: filteredHabits.length,
@@ -125,7 +133,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
-  /// Build a calendar card for a single habit
   Widget _buildHabitCalendar(Habit habit, List<HabitLog> logs) {
     final streak = _calculateStreak(logs);
     final completion = _calculateCompletion(habit, logs);
@@ -147,7 +154,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Habit name
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -160,7 +166,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             ),
           ),
 
-          // TableCalendar widget for this habit
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -172,10 +177,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             calendarStyle: const CalendarStyle(outsideDaysVisible: false),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
-                // Determine if this habit is active on the given day
                 final isValid = HabitUtils.isHabitActiveOnDay(habit, day);
-
-                // Find log for that specific day
                 final log = logs.firstWhere(
                   (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
                   orElse: () => HabitLog(
@@ -187,7 +189,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   ),
                 );
 
-                // Determine background and text color
                 final bgColor = !isValid
                     ? Colors.grey.withOpacity(0.05)
                     : (log.done
@@ -200,12 +201,20 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                 return GestureDetector(
                   onTap: isValid
                       ? () async {
-                          await _habitLogService.toggleHabit(
-                            habit.id,
-                            day,
-                            log.done,
-                          );
-                          _fetchAllLogs();
+                          try {
+                            await _habitLogService.toggleHabit(
+                              habit.id,
+                              day,
+                              log.done,
+                            );
+                            _fetchAllLogs();
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to update: $e')),
+                              );
+                            }
+                          }
                         }
                       : null,
                   child: Container(
@@ -231,9 +240,9 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
           const SizedBox(height: 8),
 
-          // Stats: streak + completion percentage
           Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 10, top: 10),
+            padding:
+                const EdgeInsets.only(left: 8, right: 8, bottom: 10, top: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -246,7 +255,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                   ),
                 ),
                 Text(
-                  '✅ Completion: ${completion.toStringAsFixed(0)}%',
+                  '✅ ${completion.toStringAsFixed(0)}% done',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -261,7 +270,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
-  /// Calculate current streak (most recent consecutive days completed)
   int _calculateStreak(List<HabitLog> logs) {
     if (logs.isEmpty) return 0;
     logs.sort((a, b) => a.dayKey.compareTo(b.dayKey));
@@ -287,7 +295,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     return streak;
   }
 
-  /// Calculate percentage of completed habit days within selected month
   double _calculateCompletion(Habit habit, List<HabitLog> logs) {
     final daysInMonth =
         DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);

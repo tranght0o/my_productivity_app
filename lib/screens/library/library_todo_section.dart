@@ -5,7 +5,6 @@ import '../../models/todo_model.dart';
 import '../../widgets/add_todo_bottom_sheet.dart';
 
 class LibraryTodoSection extends StatefulWidget {
-  // Accept search text from parent
   final String searchQuery;
   const LibraryTodoSection({super.key, this.searchQuery = ''});
 
@@ -16,27 +15,33 @@ class LibraryTodoSection extends StatefulWidget {
 class _LibraryTodoSectionState extends State<LibraryTodoSection> {
   final _todoService = TodoService();
 
-  // Store current selected month
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
-
-  // Store all todos fetched from service
   List<Todo> _todos = [];
-
-  // Sort order: true = ascending, false = descending
   bool _isAscending = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchTodos(); // load todos once at start
+    _fetchTodos();
   }
 
-  /// Load all todos from Firestore once
+  /// Load todos for selected month from Firestore (OPTIMIZED)
   Future<void> _fetchTodos() async {
-    final allTodos = await _todoService.getAllTodosOnce();
-    setState(() {
-      _todos = allTodos;
-    });
+    try {
+      final todos = await _todoService.getTodosByMonth(
+        _selectedMonth.year,
+        _selectedMonth.month,
+      );
+      setState(() {
+        _todos = todos;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load todos: $e')),
+        );
+      }
+    }
   }
 
   /// Show month picker for filtering by month
@@ -49,6 +54,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
       setState(() {
         _selectedMonth = DateTime(picked.year, picked.month);
       });
+      _fetchTodos();
     }
   }
 
@@ -87,10 +93,18 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                 title: const Text('Delete'),
                 onTap: () async {
                   Navigator.pop(context);
-                  await _todoService.deleteTodo(todo.id);
-                  setState(() {
-                    _todos.removeWhere((t) => t.id == todo.id);
-                  });
+                  try {
+                    await _todoService.deleteTodo(todo.id);
+                    setState(() {
+                      _todos.removeWhere((t) => t.id == todo.id);
+                    });
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to delete: $e')),
+                      );
+                    }
+                  }
                 },
               ),
             ],
@@ -102,22 +116,15 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter todos by selected month
-    final filteredTodos = _todos.where((t) {
-      return t.date.year == _selectedMonth.year &&
-          t.date.month == _selectedMonth.month;
-    }).toList();
-
-    // If search text is not empty, filter by title
+    //filtered in query
     final searchedTodos = widget.searchQuery.isEmpty
-        ? filteredTodos
-        : filteredTodos
+        ? _todos
+        : _todos
             .where((t) => t.title
                 .toLowerCase()
                 .contains(widget.searchQuery.toLowerCase()))
             .toList();
 
-    // Count total and done todos for progress
     final totalCount = searchedTodos.length;
     final doneCount = searchedTodos.where((t) => t.done).length;
     final progress = totalCount == 0 ? 0.0 : doneCount / totalCount;
@@ -129,14 +136,13 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
       todosByDay.putIfAbsent(day, () => []).add(todo);
     }
 
-    // Sort days by order type
     final sortedDays = todosByDay.keys.toList()
       ..sort((a, b) => _isAscending ? a.compareTo(b) : b.compareTo(a));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header section: month picker + sort button
+        // Header: month picker + sort button
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
@@ -165,7 +171,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // Progress summary (total + done)
+        // Progress summary
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Column(
@@ -190,10 +196,15 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
           ),
         ),
 
-        // Todo list grouped by date
+        // Todo list
         Expanded(
           child: sortedDays.isEmpty
-              ? const Center(child: Text('No tasks found'))
+              ? const Center(
+                  child: Text(
+                    'No tasks this month',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: sortedDays.length,
@@ -204,7 +215,6 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Day title
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
@@ -215,8 +225,6 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                             ),
                           ),
                         ),
-
-                        // List of todos for that day
                         Column(
                           children: dayTodos.map((todo) {
                             return Container(
@@ -243,14 +251,22 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                                         : Colors.grey,
                                   ),
                                   onPressed: () async {
-                                    // Update in Firestore
-                                    await _todoService.toggleDone(
-                                        todo.id, todo.done);
-
-                                    // Update UI immediately
-                                    setState(() {
-                                      todo.done = !todo.done;
-                                    });
+                                    try {
+                                      await _todoService.toggleDone(
+                                          todo.id, todo.done);
+                                      setState(() {
+                                        todo.done = !todo.done;
+                                      });
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content:
+                                                  Text('Failed to update: $e')),
+                                        );
+                                      }
+                                    }
                                   },
                                 ),
                                 title: Text(
@@ -279,4 +295,4 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
       ],
     );
   }
-}
+} 
