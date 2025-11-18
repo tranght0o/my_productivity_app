@@ -60,17 +60,12 @@ class HabitLogService {
         return _getLogsLegacy(start, end);
       }
 
-      // Query with dayKey filter (more efficient)
-      final snapshot = await _firestore
-          .collection('habitLogs')
-          .where('userId', isEqualTo: _user!.uid)
-          .where('dayKey', whereIn: dayKeys.take(10).toList()) // Firestore limit: 10 items
-          .get();
-
       // For larger ranges, make multiple queries
       List<HabitLog> allLogs = [];
       for (var i = 0; i < dayKeys.length; i += 10) {
         final batch = dayKeys.skip(i).take(10).toList();
+        if (batch.isEmpty) continue;
+        
         final batchSnapshot = await _firestore
             .collection('habitLogs')
             .where('userId', isEqualTo: _user!.uid)
