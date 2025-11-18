@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../services/todo_service.dart';
 import '../../../services/habit_log_service.dart';
 
-
 class InsightSummary extends StatefulWidget {
   const InsightSummary({super.key});
 
@@ -25,26 +24,41 @@ class _InsightSummaryState extends State<InsightSummary> {
   }
 
   Future<void> _loadData() async {
-    final todos = await _todoService.getAllTodosOnce();
-    final logs = await _habitLogService.getLogsBetween(
-      DateTime(2000), // large range
-      DateTime.now(),
-    );
+    try {
+      // OPTIMIZED: Only load last year of data
+      final oneYearAgo = DateTime.now().subtract(const Duration(days: 365));
+      final now = DateTime.now();
 
-    final todoCount = todos.where((t) => t.done).length;
-    final habitCount = logs.where((h) => h.done).length;
+      final todos = await _todoService.getTodosBetween(oneYearAgo, now);
+      final logs = await _habitLogService.getLogsBetween(oneYearAgo, now);
 
-    setState(() {
-      _todoCompleted = todoCount;
-      _habitCompleted = habitCount;
-      _loading = false;
-    });
+      final todoCount = todos.where((t) => t.done).length;
+      final habitCount = logs.where((h) => h.done).length;
+
+      setState(() {
+        _todoCompleted = todoCount;
+        _habitCompleted = habitCount;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load data: $e')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     return Padding(

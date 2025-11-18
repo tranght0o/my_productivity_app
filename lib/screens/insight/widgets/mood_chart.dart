@@ -17,12 +17,13 @@ class _MoodChartState extends State<MoodChart> {
   TimeRange _selectedRange = TimeRange.thisWeek;
   List<Mood> _moods = [];
 
+  // FIXED: Correct mood emojis
   final List<Map<String, dynamic>> _moodOptions = [
-    {'emoji': '😡', 'value': 1},
+    {'emoji': '😢', 'value': 1},
     {'emoji': '😞', 'value': 2},
     {'emoji': '😐', 'value': 3},
-    {'emoji': '😍', 'value': 4},
-    {'emoji': '😊', 'value': 5},
+    {'emoji': '😊', 'value': 4},
+    {'emoji': '🤩', 'value': 5},
   ];
 
   @override
@@ -32,8 +33,21 @@ class _MoodChartState extends State<MoodChart> {
   }
 
   Future<void> _loadData() async {
-    final moods = await _moodService.getAllMoodsOnce();
-    setState(() => _moods = moods);
+    try {
+      // OPTIMIZED: Load only selected range
+      final range = DateRangeHelper.getRange(_selectedRange);
+      final start = range['start']!;
+      final end = range['end']!;
+
+      final moods = await _moodService.getMoodsBetween(start, end);
+      setState(() => _moods = moods);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load chart data: $e')),
+        );
+      }
+    }
   }
 
   String _emojiForValue(double value) {
@@ -55,6 +69,7 @@ class _MoodChartState extends State<MoodChart> {
         .where((m) => !m.date.isBefore(start) && !m.date.isAfter(end))
         .toList();
 
+    // Group and calculate average
     final Map<String, List<int>> grouped = {};
     for (var m in filtered) {
       final key = DateRangeHelper.makeGroupKey(m.date, groupUnit);
@@ -82,18 +97,27 @@ class _MoodChartState extends State<MoodChart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Mood Chart",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(
+                  "Mood Chart",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 TimeRangeDropdown(
                   selected: _selectedRange,
-                  onChanged: (r) => setState(() => _selectedRange = r),
+                  onChanged: (r) {
+                    setState(() => _selectedRange = r);
+                    _loadData();
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 16),
             sorted.isEmpty
-                ? const Center(child: Text("No data in this period"))
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text("No data in this period"),
+                    ),
+                  )
                 : SizedBox(
                     height: 220,
                     child: LineChart(
@@ -109,11 +133,13 @@ class _MoodChartState extends State<MoodChart> {
                               reservedSize: 22,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
-                                if (index < 0 || index >= sorted.length) return const SizedBox();
+                                if (index < 0 || index >= sorted.length)
+                                  return const SizedBox();
                                 final key = sorted.keys.elementAt(index);
                                 return Text(
                                   DateRangeHelper.formatLabel(key, groupUnit),
-                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
                                 );
                               },
                             ),
@@ -130,8 +156,10 @@ class _MoodChartState extends State<MoodChart> {
                               },
                             ),
                           ),
-                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                         ),
                         lineBarsData: [
                           LineChartBarData(

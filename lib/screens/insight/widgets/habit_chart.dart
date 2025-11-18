@@ -24,10 +24,21 @@ class _HabitChartState extends State<HabitChart> {
   }
 
   Future<void> _loadLogs() async {
-    final now = DateTime.now();
-    final start = now.subtract(const Duration(days: 365));
-    final logs = await _habitLogService.getLogsBetween(start, now);
-    setState(() => _logs = logs);
+    try {
+      // Load only data for selected range
+      final range = DateRangeHelper.getRange(_selectedRange);
+      final start = range['start']!;
+      final end = range['end']!;
+
+      final logs = await _habitLogService.getLogsBetween(start, end);
+      setState(() => _logs = logs);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load chart data: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -37,7 +48,7 @@ class _HabitChartState extends State<HabitChart> {
     final end = range['end']!;
     final groupUnit = DateRangeHelper.getGroupUnit(_selectedRange, start, end);
 
-    // Filter logs
+    // Filter completed logs in range
     final filtered = _logs.where((l) {
       if (!l.done) return false;
       final parts = l.dayKey.split('-');
@@ -51,7 +62,7 @@ class _HabitChartState extends State<HabitChart> {
       return !date.isBefore(s) && !date.isAfter(e);
     }).toList();
 
-    // Group by unit
+    // Group by date unit
     final Map<String, int> grouped = {};
     for (var l in filtered) {
       final parts = l.dayKey.split('-');
@@ -64,7 +75,7 @@ class _HabitChartState extends State<HabitChart> {
       grouped[key] = (grouped[key] ?? 0) + 1;
     }
 
-    // Sort entries
+    // Sort by date
     final sorted = Map.fromEntries(
       grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
     );
@@ -87,13 +98,21 @@ class _HabitChartState extends State<HabitChart> {
                 ),
                 TimeRangeDropdown(
                   selected: _selectedRange,
-                  onChanged: (r) => setState(() => _selectedRange = r),
+                  onChanged: (r) {
+                    setState(() => _selectedRange = r);
+                    _loadLogs(); // Reload when range changes
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 16),
             sorted.isEmpty
-                ? const Center(child: Text("No data in this period"))
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Text("No data in this period"),
+                    ),
+                  )
                 : SizedBox(
                     height: 220,
                     child: BarChart(
@@ -108,11 +127,13 @@ class _HabitChartState extends State<HabitChart> {
                               reservedSize: 22,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
-                                if (index < 0 || index >= sorted.length) return const SizedBox();
+                                if (index < 0 || index >= sorted.length)
+                                  return const SizedBox();
                                 final key = sorted.keys.elementAt(index);
                                 return Text(
                                   DateRangeHelper.formatLabel(key, groupUnit),
-                                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.grey),
                                 );
                               },
                             ),
@@ -123,14 +144,21 @@ class _HabitChartState extends State<HabitChart> {
                               interval: 1,
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
-                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.grey),
                               ),
                             ),
                           ),
-                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                         ),
-                        barGroups: sorted.entries.toList().asMap().entries.map((entry) {
+                        barGroups: sorted.entries
+                            .toList()
+                            .asMap()
+                            .entries
+                            .map((entry) {
                           final xIndex = entry.key;
                           final e = entry.value;
                           return BarChartGroupData(
@@ -141,7 +169,10 @@ class _HabitChartState extends State<HabitChart> {
                                 width: 16,
                                 borderRadius: BorderRadius.circular(6),
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFD1C4E9), Color(0xFF7E57C2)],
+                                  colors: [
+                                    Color(0xFFD1C4E9),
+                                    Color(0xFF7E57C2)
+                                  ],
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                 ),
