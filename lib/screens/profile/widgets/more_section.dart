@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../help_support_screen.dart';
+import '../../../widgets/about_app_dialog.dart';
 
 class MoreSection extends StatelessWidget {
   const MoreSection({super.key});
@@ -24,14 +26,23 @@ class MoreSection extends StatelessWidget {
                 leading: const Icon(Icons.help_outline, color: Colors.deepPurple),
                 title: const Text("Help & Support"),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HelpSupportScreen(),
+                    ),
+                  );
+                },
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.info_outline, color: Colors.deepPurple),
                 title: const Text("About App"),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  AboutAppDialog.show(context);
+                },
               ),
             ],
           ),
