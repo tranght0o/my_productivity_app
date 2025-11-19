@@ -58,25 +58,6 @@ class SettingsSection extends StatelessWidget {
           ),
           const Divider(height: 1),
 
-          // Notification toggle
-          SwitchListTile(
-            secondary: const Icon(Icons.notifications_none, color: Colors.deepPurple),
-            title: const Text("Notifications"),
-            value: true,
-            onChanged: (val) {},
-          ),
-          const Divider(height: 1),
-
-          // App theme option
-          ListTile(
-            leading: const Icon(Icons.color_lens_outlined, color: Colors.deepPurple),
-            title: const Text("App Theme"),
-            subtitle: const Text("Choose light or dark mode"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          const Divider(height: 1),
-
           // Logout option
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
