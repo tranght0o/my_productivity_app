@@ -5,6 +5,7 @@ import '../../models/habit_model.dart';
 import '../../models/habit_log_model.dart';
 import '../../widgets/add_habit_bottom_sheet.dart';
 import '../../utils/habit_utils.dart'; // for date validation and filtering logic
+import '../../utils/message_helper.dart';
 
 class HabitSection extends StatefulWidget {
   final DateTime selectedDay;
@@ -18,7 +19,7 @@ class _HabitSectionState extends State<HabitSection> {
   final _habitService = HabitService();
   final _habitLogService = HabitLogService();
 
-  // Show edit/delete options for a habit
+  /// Show edit/delete options for a habit
   void _showHabitOptions(Habit habit) {
     showModalBottomSheet(
       context: context,
@@ -41,11 +42,30 @@ class _HabitSectionState extends State<HabitSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete),
-                title: const Text('Delete'),
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete', style: TextStyle(color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context);
-                  await _habitService.deleteHabit(habit.id);
+                  
+                  // Show confirmation dialog
+                  final confirmed = await MessageHelper.showConfirmDialog(
+                    context: context,
+                    title: 'Delete Habit',
+                    message: 'Are you sure you want to delete "${habit.name}"? All progress will be lost.',
+                  );
+
+                  if (confirmed) {
+                    try {
+                      await _habitService.deleteHabit(habit.id);
+                      if (mounted) {
+                        MessageHelper.showSuccess(context, 'Habit deleted');
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        MessageHelper.showError(context, 'Failed to delete: $e');
+                      }
+                    }
+                  }
                 },
               ),
             ],
@@ -86,11 +106,10 @@ class _HabitSectionState extends State<HabitSection> {
                   width: double.infinity,
                   child: Center(
                     child: Text(
-                      'Build your routine by adding a new habit',
+                      'Build your routine by adding a habit',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -117,11 +136,10 @@ class _HabitSectionState extends State<HabitSection> {
                       width: double.infinity,
                       child: Center(
                         child: Text(
-                          'Build your routine by adding a new habit',
+                          'No habits scheduled for today',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -170,11 +188,20 @@ class _HabitSectionState extends State<HabitSection> {
                                     : Colors.grey,
                               ),
                               // Toggle completion state for this habit
-                              onPressed: () => _habitLogService.toggleHabit(
-                                habit.id,
-                                widget.selectedDay,
-                                log.done,
-                              ),
+                              onPressed: () async {
+                                try {
+                                  await _habitLogService.toggleHabit(
+                                    habit.id,
+                                    widget.selectedDay,
+                                    log.done,
+                                  );
+                                } catch (e) {
+                                  if (mounted) {
+                                    MessageHelper.showError(
+                                        context, 'Failed to update: $e');
+                                  }
+                                }
+                              },
                             ),
                             title: Text(
                               habit.name,

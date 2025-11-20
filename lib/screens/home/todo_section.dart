@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/todo_service.dart';
 import '../../models/todo_model.dart';
 import '../../widgets/add_todo_bottom_sheet.dart';
+import '../../utils/message_helper.dart';
 
 class TodoSection extends StatefulWidget {
   final DateTime selectedDay;
@@ -14,6 +15,7 @@ class TodoSection extends StatefulWidget {
 class _TodoSectionState extends State<TodoSection> {
   final _todoService = TodoService();
 
+  /// Show a bottom sheet with edit or delete actions
   void _showTaskOptions(Todo todo) {
     showModalBottomSheet(
       context: context,
@@ -37,11 +39,30 @@ class _TodoSectionState extends State<TodoSection> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete),
-                title: const Text('Delete'),
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete', style: TextStyle(color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context);
-                  await _todoService.deleteTodo(todo.id);
+                  
+                  // Show confirmation dialog
+                  final confirmed = await MessageHelper.showConfirmDialog(
+                    context: context,
+                    title: 'Delete Task',
+                    message: 'Are you sure you want to delete "${todo.title}"?',
+                  );
+
+                  if (confirmed) {
+                    try {
+                      await _todoService.deleteTodo(todo.id);
+                      if (mounted) {
+                        MessageHelper.showSuccess(context, 'Task deleted');
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        MessageHelper.showError(context, 'Failed to delete: $e');
+                      }
+                    }
+                  }
                 },
               ),
             ],
@@ -80,11 +101,10 @@ class _TodoSectionState extends State<TodoSection> {
                   width: double.infinity,
                   child: Center(
                     child: Text(
-                      'Plan your day by adding a new task',
+                      'No tasks for today. Tap + to add one!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -118,8 +138,16 @@ class _TodoSectionState extends State<TodoSection> {
                             color:
                                 todo.done ? Colors.deepPurple : Colors.grey,
                           ),
-                          onPressed: () =>
-                              _todoService.toggleDone(todo.id, todo.done),
+                          onPressed: () async {
+                            try {
+                              await _todoService.toggleDone(todo.id, todo.done);
+                            } catch (e) {
+                              if (mounted) {
+                                MessageHelper.showError(
+                                    context, 'Failed to update: $e');
+                              }
+                            }
+                          },
                         ),
                         title: Text(
                           todo.title,
