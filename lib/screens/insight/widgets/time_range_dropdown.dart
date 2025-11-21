@@ -6,7 +6,6 @@ enum TimeRange {
   thisMonth,
   thisYear,
   allTime,
-  custom,
 }
 
 class TimeRangeDropdown extends StatelessWidget {
@@ -45,8 +44,6 @@ class TimeRangeDropdown extends StatelessWidget {
         return "This Year";
       case TimeRange.allTime:
         return "All Time";
-      case TimeRange.custom:
-        return "Custom Range";
     }
   }
 }

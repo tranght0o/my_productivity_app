@@ -4,7 +4,7 @@ import '../screens/insight/widgets/time_range_dropdown.dart';
 enum GroupUnit { day, month, year }
 
 class DateRangeHelper {
-  /// Returns a map
+  /// Returns a map with 'start' and 'end' DateTime for the given TimeRange
   static Map<String, DateTime> getRange(TimeRange range) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -30,9 +30,6 @@ class DateRangeHelper {
       case TimeRange.allTime:
         final start = DateTime(2000);
         return {'start': start, 'end': today.add(const Duration(days: 1))};
-      case TimeRange.custom:
-        final start = today.subtract(const Duration(days: 7));
-        return {'start': start, 'end': today.add(const Duration(days: 1))};
     }
   }
 
@@ -47,30 +44,29 @@ class DateRangeHelper {
         return GroupUnit.month;
       case TimeRange.allTime:
         return GroupUnit.year;
-      case TimeRange.custom:
-        final diff = end.difference(start).inDays;
-        if (diff <= 31) return GroupUnit.day;
-        if (diff <= 365) return GroupUnit.month;
-        return GroupUnit.year;
     }
   }
 
-  ///  helper to display range as text
+  /// Helper to display range as text
   static String rangeLabel(TimeRange range) {
     final rangeMap = getRange(range);
     final f = DateFormat('dd/MM');
     return "${f.format(rangeMap['start']!)} - ${f.format(rangeMap['end']!.subtract(const Duration(days: 1)))}";
   }
 
-  /// Create a key for grouping
+  /// Create a key for grouping (FIXED: padded with zeros for proper sorting)
   static String makeGroupKey(DateTime date, GroupUnit unit) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    
     switch (unit) {
       case GroupUnit.day:
-        return "${date.year}-${date.month}-${date.day}";
+        return "$year-$month-$day";
       case GroupUnit.month:
-        return "${date.year}-${date.month}";
+        return "$year-$month";
       case GroupUnit.year:
-        return "${date.year}";
+        return year;
     }
   }
 
