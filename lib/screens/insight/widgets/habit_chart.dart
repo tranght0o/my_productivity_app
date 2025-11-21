@@ -25,7 +25,6 @@ class _HabitChartState extends State<HabitChart> {
 
   Future<void> _loadLogs() async {
     try {
-      // Load only data for selected range
       final range = DateRangeHelper.getRange(_selectedRange);
       final start = range['start']!;
       final end = range['end']!;
@@ -81,9 +80,9 @@ class _HabitChartState extends State<HabitChart> {
     );
 
     return Card(
-      margin: const EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -94,23 +93,36 @@ class _HabitChartState extends State<HabitChart> {
               children: [
                 const Text(
                   "Habits Completed",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 TimeRangeDropdown(
                   selected: _selectedRange,
                   onChanged: (r) {
                     setState(() => _selectedRange = r);
-                    _loadLogs(); // Reload when range changes
+                    _loadLogs();
                   },
                 ),
               ],
             ),
             const SizedBox(height: 16),
             sorted.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Text("No data in this period"),
+                ? Container(
+                    height: 200,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.repeat, size: 48, color: Colors.grey.shade300),
+                        const SizedBox(height: 8),
+                        Text(
+                          "No completed habits",
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
                     ),
                   )
                 : SizedBox(
@@ -119,21 +131,37 @@ class _HabitChartState extends State<HabitChart> {
                       BarChartData(
                         minY: 0,
                         borderData: FlBorderData(show: false),
-                        gridData: FlGridData(show: false),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: 1,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: Colors.grey.shade200,
+                              strokeWidth: 1,
+                            );
+                          },
+                        ),
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              reservedSize: 22,
+                              reservedSize: 28,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
                                 if (index < 0 || index >= sorted.length)
                                   return const SizedBox();
                                 final key = sorted.keys.elementAt(index);
-                                return Text(
-                                  DateRangeHelper.formatLabel(key, groupUnit),
-                                  style: const TextStyle(
-                                      fontSize: 10, color: Colors.grey),
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    DateRangeHelper.formatLabel(key, groupUnit),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -142,10 +170,13 @@ class _HabitChartState extends State<HabitChart> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               interval: 1,
+                              reservedSize: 32,
                               getTitlesWidget: (value, meta) => Text(
                                 value.toInt().toString(),
-                                style: const TextStyle(
-                                    fontSize: 10, color: Colors.grey),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                             ),
                           ),
@@ -166,12 +197,15 @@ class _HabitChartState extends State<HabitChart> {
                             barRods: [
                               BarChartRodData(
                                 toY: e.value.toDouble(),
-                                width: 16,
-                                borderRadius: BorderRadius.circular(6),
+                                width: 18,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(6),
+                                  topRight: Radius.circular(6),
+                                ),
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFFD1C4E9),
-                                    Color(0xFF7E57C2)
+                                    Color(0xFFCE93D8),
+                                    Color(0xFF7B1FA2),
                                   ],
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,

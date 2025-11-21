@@ -17,7 +17,7 @@ class _MoodChartState extends State<MoodChart> {
   TimeRange _selectedRange = TimeRange.thisWeek;
   List<Mood> _moods = [];
 
-  // FIXED: Correct mood emojis
+  // FIXED: Correct mood emojis matching the new scale
   final List<Map<String, dynamic>> _moodOptions = [
     {'emoji': '😢', 'value': 1},
     {'emoji': '😞', 'value': 2},
@@ -34,7 +34,7 @@ class _MoodChartState extends State<MoodChart> {
 
   Future<void> _loadData() async {
     try {
-      // OPTIMIZED: Load only selected range
+      // OPTIMIZED: Load only data for selected range
       final range = DateRangeHelper.getRange(_selectedRange);
       final start = range['start']!;
       final end = range['end']!;
@@ -69,7 +69,7 @@ class _MoodChartState extends State<MoodChart> {
         .where((m) => !m.date.isBefore(start) && !m.date.isAfter(end))
         .toList();
 
-    // Group and calculate average
+    // Group and calculate average mood per period
     final Map<String, List<int>> grouped = {};
     for (var m in filtered) {
       final key = DateRangeHelper.makeGroupKey(m.date, groupUnit);
@@ -105,7 +105,7 @@ class _MoodChartState extends State<MoodChart> {
                   selected: _selectedRange,
                   onChanged: (r) {
                     setState(() => _selectedRange = r);
-                    _loadData();
+                    _loadData(); // Reload when range changes
                   },
                 ),
               ],
