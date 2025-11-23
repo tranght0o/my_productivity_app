@@ -28,7 +28,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     _fetchAllLogs();
   }
 
-  /// Fetch logs for selected month (OPTIMIZED)
+  /// Fetch logs for selected month
   Future<void> _fetchAllLogs() async {
     try {
       final logs = await _habitLogService.getLogsByMonth(
@@ -270,31 +270,63 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Calculate consecutive streak from most recent completed day
   int _calculateStreak(List<HabitLog> logs) {
     if (logs.isEmpty) return 0;
-    logs.sort((a, b) => a.dayKey.compareTo(b.dayKey));
-    int streak = 0;
-    DateTime today = DateTime.now();
 
-    for (int i = logs.length - 1; i >= 0; i--) {
-      final parts = logs[i].dayKey.split('-');
-      final date = DateTime(
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+
+    // Get only completed logs
+    final completedLogs = logs.where((log) => log.done).toList();
+    if (completedLogs.isEmpty) return 0;
+
+    // Convert to dates and sort descending
+    final completedDates = completedLogs.map((log) {
+      final parts = log.dayKey.split('-');
+      return DateTime(
         int.parse(parts[0]),
         int.parse(parts[1]),
         int.parse(parts[2]),
       );
-      if (!logs[i].done || date.isAfter(today)) continue;
+    }).toList()
+      ..sort((a, b) => b.compareTo(a));
 
-      final diff = today.difference(date).inDays;
-      if (diff == streak) {
-        streak++;
+    int streak = 0;
+    DateTime? expectedDate;
+
+    for (var date in completedDates) {
+      // Skip future dates
+      if (date.isAfter(normalizedToday)) continue;
+
+      if (expectedDate == null) {
+        // First iteration: check if streak starts from today or yesterday
+        final daysSinceToday = normalizedToday.difference(date).inDays;
+        if (daysSinceToday <= 1) {
+          streak = 1;
+          expectedDate = date.subtract(const Duration(days: 1));
+        } else {
+          // No recent activity, streak is 0
+          break;
+        }
       } else {
-        break;
+        // Check if this date is consecutive
+        if (date.year == expectedDate.year &&
+            date.month == expectedDate.month &&
+            date.day == expectedDate.day) {
+          streak++;
+          expectedDate = date.subtract(const Duration(days: 1));
+        } else {
+          // Streak broken
+          break;
+        }
       }
     }
+
     return streak;
   }
 
+  /// Calculate completion percentage for this month
   double _calculateCompletion(Habit habit, List<HabitLog> logs) {
     final daysInMonth =
         DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);

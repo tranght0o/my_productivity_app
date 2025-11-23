@@ -7,13 +7,11 @@ class MoodService {
   final _user = FirebaseAuth.instance.currentUser;
 
   /// Normalize a DateTime to only keep the date (no time).
-  /// Example: 2025-10-31 10:45 → becomes 2025-10-31 00:00.
   DateTime _normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
 
   /// Get a stream of the mood for a specific day.
-  /// This updates in real time when Firestore data changes.
   Stream<Mood?> getMoodForDay(DateTime date) {
     final normalizedDate = _normalizeDate(date);
     return _firestore
@@ -30,32 +28,32 @@ class MoodService {
   }
 
   /// Add a new mood or update an existing one for the selected day.
-  /// If a record for that date already exists, it is updated instead of duplicated.
   Future<void> addOrUpdateMood(DateTime date, int value, String? note) async {
     final normalizedDate = _normalizeDate(date);
     final moodsRef = _firestore.collection('moods');
 
-    // Check if a mood already exists for this user and date.
-    final existing = await moodsRef
-        .where('userId', isEqualTo: _user!.uid)
-        .where('date', isEqualTo: normalizedDate)
-        .limit(1)
-        .get();
+    try {
+      final existing = await moodsRef
+          .where('userId', isEqualTo: _user!.uid)
+          .where('date', isEqualTo: normalizedDate)
+          .limit(1)
+          .get();
 
-    if (existing.docs.isEmpty) {
-      // Create a new mood document
-      await moodsRef.add({
-        'userId': _user.uid,
-        'date': normalizedDate,
-        'moodValue': value,
-        'note': note,
-      });
-    } else {
-      // Update the existing mood document
-      await moodsRef.doc(existing.docs.first.id).update({
-        'moodValue': value,
-        'note': note,
-      });
+      if (existing.docs.isEmpty) {
+        await moodsRef.add({
+          'userId': _user.uid,
+          'date': normalizedDate,
+          'moodValue': value,
+          'note': note,
+        });
+      } else {
+        await moodsRef.doc(existing.docs.first.id).update({
+          'moodValue': value,
+          'note': note,
+        });
+      }
+    } catch (e) {
+      throw Exception('Failed to save mood: $e');
     }
   }
 
@@ -69,15 +67,59 @@ class MoodService {
             snapshot.docs.map((d) => Mood.fromMap(d.data(), d.id)).toList());
   }
 
-  /// Fetch all moods once (used for calendar and reports).
-  Future<List<Mood>> getAllMoodsOnce() async {
-    final snapshot = await _firestore
-        .collection('moods')
-        .where('userId', isEqualTo: _user!.uid)
-        .get();
+  // ADDED: Query moods by specific month (for Library screen performance)
+  Future<List<Mood>> getMoodsByMonth(int year, int month) async {
+    try {
+      final startOfMonth = DateTime(year, month, 1);
+      final endOfMonth = DateTime(year, month + 1, 0);
 
-    return snapshot.docs
-        .map((doc) => Mood.fromMap(doc.data(), doc.id))
-        .toList();
+      final snapshot = await _firestore
+          .collection('moods')
+          .where('userId', isEqualTo: _user!.uid)
+          .where('date', isGreaterThanOrEqualTo: startOfMonth)
+          .where('date', isLessThanOrEqualTo: endOfMonth)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Mood.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch moods by month: $e');
+    }
+  }
+
+  // IMPROVED: Limit data fetch for insights (not all time)
+  Future<List<Mood>> getMoodsBetween(DateTime start, DateTime end) async {
+    try {
+      final snapshot = await _firestore
+          .collection('moods')
+          .where('userId', isEqualTo: _user!.uid)
+          .where('date', isGreaterThanOrEqualTo: start)
+          .where('date', isLessThanOrEqualTo: end)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Mood.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch moods: $e');
+    }
+  }
+
+  // DEPRECATED: Use getMoodsByMonth or getMoodsBetween instead
+  @Deprecated('Use getMoodsByMonth() for better performance')
+  Future<List<Mood>> getAllMoodsOnce() async {
+    try {
+      final snapshot = await _firestore
+          .collection('moods')
+          .where('userId', isEqualTo: _user!.uid)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Mood.fromMap(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch all moods: $e');
+    }
   }
 }

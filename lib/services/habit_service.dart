@@ -38,9 +38,23 @@ class HabitService {
     });
   }
 
-  /// Delete a habit by its Firestore document ID
+  /// Delete a habit and all its associated logs
   Future<void> deleteHabit(String id) async {
+    // Delete the habit document
     await _firestore.collection('habits').doc(id).delete();
+
+    // Delete all habit logs for this habit
+    final logsQuery = await _firestore
+        .collection('habitLogs')
+        .where('habitId', isEqualTo: id)
+        .get();
+
+    // Batch delete for better performance
+    final batch = _firestore.batch();
+    for (var doc in logsQuery.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 
   /// Update habit details (supports partial updates)
