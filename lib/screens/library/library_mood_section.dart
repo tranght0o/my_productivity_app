@@ -24,10 +24,13 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     _fetchMoods();
   }
 
-  // Fetch all moods once
+  /// Fetch moods for the selected month only
   Future<void> _fetchMoods() async {
     try {
-      final moods = await _moodService.getAllMoodsOnce();
+      final moods = await _moodService.getMoodsByMonth(
+        _selectedMonth.year,
+        _selectedMonth.month,
+      );
       setState(() {
         _moodByDay = {for (var m in moods) _dayKeyFromDate(m.date): m};
       });
@@ -40,7 +43,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     }
   }
 
-  // Month picker
+  /// Show month picker and reload data
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -51,10 +54,10 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
         _selectedMonth = DateTime(picked.year, picked.month);
         _focusedDay = DateTime(picked.year, picked.month);
       });
+      _fetchMoods();
     }
   }
 
-  // Format date to yyyy-MM-dd key
   String _dayKeyFromDate(DateTime date) {
     final y = date.year.toString();
     final m = date.month.toString().padLeft(2, '0');
@@ -62,7 +65,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     return '$y-$m-$d';
   }
 
-  // Map mood value to emoji
   String _emojiForValue(int value) {
     switch (value) {
       case 1:
@@ -80,7 +82,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     }
   }
 
-  // Map mood value to label
   String _labelForValue(int value) {
     switch (value) {
       case 1:
@@ -98,7 +99,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     }
   }
 
-  // Dialog for note
   void _showNoteDialogForDay(DateTime day, Mood mood) {
     final controller = TextEditingController(text: mood.note ?? '');
     showDialog(
