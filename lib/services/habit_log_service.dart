@@ -6,7 +6,13 @@ class HabitLogService {
   final _firestore = FirebaseFirestore.instance;
   final _user = FirebaseAuth.instance.currentUser;
 
-  String _dayKey(DateTime date) => "${date.year}-${date.month}-${date.day}";
+  /// Format date as dayKey with leading zeros for consistency
+  String _dayKey(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return "$year-$month-$day";
+  }
 
   Stream<List<HabitLog>> getLogsForDay(DateTime date) {
     return _firestore
@@ -44,10 +50,9 @@ class HabitLogService {
     }
   }
 
-  // IMPROVED: More efficient query with proper date filtering
+  /// Query logs within date range with efficient batching
   Future<List<HabitLog>> getLogsBetween(DateTime start, DateTime end) async {
     try {
-      // Generate all possible dayKeys in range for better query
       final List<String> dayKeys = [];
       for (var date = start; 
            date.isBefore(end) || date.isAtSameMomentAs(end); 
@@ -55,12 +60,10 @@ class HabitLogService {
         dayKeys.add(_dayKey(date));
       }
 
-      // If range is too large (>90 days), use old method
       if (dayKeys.length > 90) {
         return _getLogsLegacy(start, end);
       }
 
-      // For larger ranges, make multiple queries
       List<HabitLog> allLogs = [];
       for (var i = 0; i < dayKeys.length; i += 10) {
         final batch = dayKeys.skip(i).take(10).toList();
@@ -83,7 +86,7 @@ class HabitLogService {
     }
   }
 
-  // ADDED: Get logs for specific month (for Library screen)
+  /// Get logs for specific month
   Future<List<HabitLog>> getLogsByMonth(int year, int month) async {
     try {
       final startOfMonth = DateTime(year, month, 1);
@@ -95,7 +98,7 @@ class HabitLogService {
     }
   }
 
-  // Legacy method: fetch all and filter client-side (fallback)
+  /// Legacy method for large date ranges
   Future<List<HabitLog>> _getLogsLegacy(DateTime start, DateTime end) async {
     try {
       final query = await _firestore
@@ -107,10 +110,19 @@ class HabitLogService {
 
       return all.where((l) {
         final parts = l.dayKey.split('-');
-        final date = DateTime(
-            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-        return date.isAfter(start.subtract(const Duration(days: 1))) &&
-            date.isBefore(end.add(const Duration(days: 1)));
+        if (parts.length != 3) return false;
+        
+        try {
+          final date = DateTime(
+            int.parse(parts[0]), 
+            int.parse(parts[1]), 
+            int.parse(parts[2])
+          );
+          return date.isAfter(start.subtract(const Duration(days: 1))) &&
+              date.isBefore(end.add(const Duration(days: 1)));
+        } catch (_) {
+          return false;
+        }
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch habit logs (legacy): $e');
