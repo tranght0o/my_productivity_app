@@ -64,6 +64,20 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     }
   }
 
+  /// Format frequency text for display
+  String _getFrequencyText(Habit habit) {
+    switch (habit.frequency) {
+      case 'daily':
+        return 'Everyday';
+      case 'weekly':
+        return 'Every ${habit.daysOfWeek.join(", ")}';
+      case 'monthly':
+        return 'Every ${habit.daysOfMonth.join(", ")}';
+      default:
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Habit>>(
@@ -154,15 +168,29 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with habit name and frequency
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(
-              habit.name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  habit.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  _getFrequencyText(habit),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -177,63 +205,11 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
             calendarStyle: const CalendarStyle(outsideDaysVisible: false),
             calendarBuilders: CalendarBuilders(
               defaultBuilder: (context, day, focusedDay) {
-                final isValid = HabitUtils.isHabitActiveOnDay(habit, day);
-                final log = logs.firstWhere(
-                  (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
-                  orElse: () => HabitLog(
-                    id: '',
-                    habitId: habit.id,
-                    userId: habit.userId,
-                    dayKey: '',
-                    done: false,
-                  ),
-                );
-
-                final bgColor = !isValid
-                    ? Colors.grey.withOpacity(0.05)
-                    : (log.done
-                        ? Colors.deepPurple.withOpacity(0.7)
-                        : Colors.deepPurple.withOpacity(0.1));
-
-                final textColor =
-                    isValid ? Colors.black : Colors.grey.withOpacity(0.4);
-
-                return GestureDetector(
-                  onTap: isValid
-                      ? () async {
-                          try {
-                            await _habitLogService.toggleHabit(
-                              habit.id,
-                              day,
-                              log.done,
-                            );
-                            _fetchAllLogs();
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to update: $e')),
-                              );
-                            }
-                          }
-                        }
-                      : null,
-                  child: Container(
-                    margin: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${day.day}',
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight:
-                            log.done ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                );
+                return _buildDayCell(day, habit, logs);
+              },
+              // Handle today's date with same style as other days
+              todayBuilder: (context, day, focusedDay) {
+                return _buildDayCell(day, habit, logs);
               },
             ),
           ),
@@ -270,6 +246,65 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
+  /// Build individual day cell for calendar
+  Widget _buildDayCell(DateTime day, Habit habit, List<HabitLog> logs) {
+    final isValid = HabitUtils.isHabitActiveOnDay(habit, day);
+    final log = logs.firstWhere(
+      (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
+      orElse: () => HabitLog(
+        id: '',
+        habitId: habit.id,
+        userId: habit.userId,
+        dayKey: '',
+        done: false,
+      ),
+    );
+
+    final bgColor = !isValid
+        ? Colors.grey.withOpacity(0.05)
+        : (log.done
+            ? Colors.deepPurple.withOpacity(0.7)
+            : Colors.deepPurple.withOpacity(0.1));
+
+    final textColor = isValid ? Colors.black : Colors.grey.withOpacity(0.4);
+
+    return GestureDetector(
+      onTap: isValid
+          ? () async {
+              try {
+                await _habitLogService.toggleHabit(
+                  habit.id,
+                  day,
+                  log.done,
+                );
+                _fetchAllLogs();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update: $e')),
+                  );
+                }
+              }
+            }
+          : null,
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+            color: textColor,
+            fontWeight: log.done ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Calculate consecutive streak from most recent completed day
   int _calculateStreak(List<HabitLog> logs) {
     if (logs.isEmpty) return 0;
@@ -277,11 +312,9 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     final today = DateTime.now();
     final normalizedToday = DateTime(today.year, today.month, today.day);
 
-    // Get only completed logs
     final completedLogs = logs.where((log) => log.done).toList();
     if (completedLogs.isEmpty) return 0;
 
-    // Convert to dates and sort descending
     final completedDates = completedLogs.map((log) {
       final parts = log.dayKey.split('-');
       return DateTime(
@@ -296,28 +329,23 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     DateTime? expectedDate;
 
     for (var date in completedDates) {
-      // Skip future dates
       if (date.isAfter(normalizedToday)) continue;
 
       if (expectedDate == null) {
-        // First iteration: check if streak starts from today or yesterday
         final daysSinceToday = normalizedToday.difference(date).inDays;
         if (daysSinceToday <= 1) {
           streak = 1;
           expectedDate = date.subtract(const Duration(days: 1));
         } else {
-          // No recent activity, streak is 0
           break;
         }
       } else {
-        // Check if this date is consecutive
         if (date.year == expectedDate.year &&
             date.month == expectedDate.month &&
             date.day == expectedDate.day) {
           streak++;
           expectedDate = date.subtract(const Duration(days: 1));
         } else {
-          // Streak broken
           break;
         }
       }
