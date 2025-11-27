@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/bottom_nav.dart';
-import '../main.dart'; // import navigatorKey
 import 'login_screen.dart';
-
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -28,23 +26,13 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // If a user is logged in
+        // If a user is logged in, show main app
         if (snapshot.hasData) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            navigatorKey.currentState!.pushReplacement(
-              MaterialPageRoute(builder: (_) => const BottomNav()),
-            );
-          });
-          return const SizedBox(); // placeholder while redirecting
+          return const BottomNav();
         }
 
         // If no user is logged in, go to the login screen
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          navigatorKey.currentState!.pushReplacement(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        });
-        return const SizedBox(); // placeholder while redirecting
+        return const LoginScreen();
       },
     );
   }
