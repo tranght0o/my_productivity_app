@@ -108,14 +108,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white,
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
+            child: Image.asset('assets/images/logo.png')
           ),
           const SizedBox(width: 16),
           Expanded(
