@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
-import 'forgot_password_screen.dart'; // Import for password reset screen
-import '../main.dart'; // import navigatorKey
+import 'forgot_password_screen.dart';
+import '../navigation/bottom_nav.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,14 +20,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _errorMessage;
 
-  // Validate email field
+  // Validate email input
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email cannot be empty';
     if (!value.contains('@')) return 'Invalid email';
     return null;
   }
 
-  // Validate password field
+  // Validate password input
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password cannot be empty';
     if (value.length < 6) return 'Password must be at least 6 characters';
@@ -50,12 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = false);
 
-    // If there’s an error (e.g., wrong password)
+    // If there's an error (e.g., wrong password)
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
-      // Navigate using navigatorKey instead of context
-      navigatorKey.currentState!.pushReplacementNamed('/');
+      // Navigate to home screen
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const BottomNav()),
+      );
     }
   }
 
