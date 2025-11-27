@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../main.dart'; // import navigatorKey
+import '../navigation/bottom_nav.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -20,23 +20,27 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _loading = false;
   String? _errorMessage;
 
+  // Validate name input
   String? _validateName(String? value) {
     if (value == null || value.isEmpty) return 'Name cannot be empty';
     return null;
   }
 
+  // Validate email input
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email cannot be empty';
     if (!value.contains('@')) return 'Invalid email';
     return null;
   }
 
+  // Validate password input
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password cannot be empty';
     if (value.length < 6) return 'Password must be at least 6 characters';
     return null;
   }
 
+  // Handle user signup logic
   void _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -47,6 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     _formKey.currentState!.save();
 
+    // Attempt to create account through AuthService
     final error = await _authService.signUp(
       name: _name,
       email: _email,
@@ -55,10 +60,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _loading = false);
 
+    // If there's an error (e.g., email already in use)
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
-      navigatorKey.currentState!.pushReplacementNamed('/');
+      // Navigate to home screen after successful signup
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const BottomNav()),
+      );
     }
   }
 
@@ -66,6 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        // Background gradient for visual appeal
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFFFFFDE7), Color(0xFFFFF9C4)],
@@ -88,6 +99,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Title and subtitle
                       const Text(
                         'Create Account',
                         style: TextStyle(
@@ -102,6 +114,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 24),
 
+                      // Display error message if signup fails
                       if (_errorMessage != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
@@ -111,6 +124,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
 
+                      // Name input field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Name',
@@ -123,6 +137,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 12),
 
+                      // Email input field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Email',
@@ -136,6 +151,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 12),
 
+                      // Password input field
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Password',
@@ -149,6 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 24),
 
+                      // Signup button (shows loading spinner while creating account)
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -173,9 +190,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 16),
 
+                      // Login redirect
                       TextButton(
                         onPressed: () {
-                          navigatorKey.currentState!.pushReplacement(
+                          Navigator.pushReplacement(
+                            context,
                             MaterialPageRoute(
                               builder: (_) => const LoginScreen(),
                             ),
