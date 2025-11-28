@@ -12,7 +12,6 @@ class MoodSection extends StatefulWidget {
 
 class _MoodSectionState extends State<MoodSection> {
   final _moodService = MoodService();
-  final TextEditingController _noteController = TextEditingController();
 
   //mood options and values
   final List<Map<String, dynamic>> _moodOptions = [
@@ -25,20 +24,14 @@ class _MoodSectionState extends State<MoodSection> {
 
   int? _tempSelected;
 
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
   /// Save the mood to Firestore and update local state for instant UI feedback
-  Future<void> _saveMood(int value, String? note) async {
+  Future<void> _saveMood(int value) async {
     setState(() {
       _tempSelected = value;
     });
     
     try {
-      await _moodService.addOrUpdateMood(widget.selectedDay, value, note);
+      await _moodService.addOrUpdateMood(widget.selectedDay, value);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,11 +59,6 @@ class _MoodSectionState extends State<MoodSection> {
         builder: (context, snapshot) {
           final currentMood = snapshot.data;
           final currentValue = currentMood?.moodValue ?? _tempSelected;
-
-          if (currentMood?.note != null &&
-              _noteController.text != currentMood!.note) {
-            _noteController.text = currentMood.note!;
-          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +94,7 @@ class _MoodSectionState extends State<MoodSection> {
                   children: _moodOptions.map((m) {
                     final bool selected = currentValue == m['value'];
                     return GestureDetector(
-                      onTap: () => _saveMood(m['value'], _noteController.text),
+                      onTap: () => _saveMood(m['value']),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         padding: const EdgeInsets.all(14),
@@ -135,30 +123,6 @@ class _MoodSectionState extends State<MoodSection> {
               ),
 
               const SizedBox(height: 16),
-
-              // Optional Note Input
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: TextField(
-                  controller: _noteController,
-                  decoration: InputDecoration(
-                    labelText: 'Add a note (optional)',
-                    hintText: 'What made you feel this way?',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.save, color: Colors.deepPurple),
-                      onPressed: () =>
-                          _saveMood(currentValue ?? 0, _noteController.text),
-                    ),
-                  ),
-                  minLines: 1,
-                  maxLines: 3,
-                  onSubmitted: (_) =>
-                      _saveMood(currentValue ?? 0, _noteController.text),
-                ),
-              ),
             ],
           );
         },
@@ -172,7 +136,6 @@ class _MoodSectionState extends State<MoodSection> {
     if (oldWidget.selectedDay != widget.selectedDay) {
       setState(() {
         _tempSelected = null;
-        _noteController.clear();
       });
     }
   }

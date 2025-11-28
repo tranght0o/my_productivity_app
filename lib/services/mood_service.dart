@@ -28,7 +28,7 @@ class MoodService {
   }
 
   /// Add a new mood or update an existing one for the selected day.
-  Future<void> addOrUpdateMood(DateTime date, int value, String? note) async {
+  Future<void> addOrUpdateMood(DateTime date, int value) async {
     final normalizedDate = _normalizeDate(date);
     final moodsRef = _firestore.collection('moods');
 
@@ -44,12 +44,10 @@ class MoodService {
           'userId': _user.uid,
           'date': normalizedDate,
           'moodValue': value,
-          'note': note,
         });
       } else {
         await moodsRef.doc(existing.docs.first.id).update({
           'moodValue': value,
-          'note': note,
         });
       }
     } catch (e) {
@@ -63,8 +61,8 @@ class MoodService {
         .collection('moods')
         .where('userId', isEqualTo: _user!.uid)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((d) => Mood.fromMap(d.data(), d.id)).toList());
+        .map(
+            (snapshot) => snapshot.docs.map((d) => Mood.fromMap(d.data(), d.id)).toList());
   }
 
   // ADDED: Query moods by specific month (for Library screen performance)

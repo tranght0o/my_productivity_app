@@ -5,14 +5,12 @@ class Mood {
   final String userId; // which user
   final DateTime date; // which day this mood is for
   final int moodValue; // mood level
-  final String? note; // optional note text
 
   Mood({
     required this.id,
     required this.userId,
     required this.date,
     required this.moodValue,
-    this.note,
   });
 
   // convert firestore data to Mood
@@ -22,7 +20,6 @@ class Mood {
       userId: data['userId'] ?? '',
       date: (data['date'] as Timestamp).toDate(),
       moodValue: data['moodValue'] ?? 0,
-      note: data['note'],
     );
   }
 
@@ -32,7 +29,6 @@ class Mood {
       'userId': userId,
       'date': date,
       'moodValue': moodValue,
-      'note': note,
     };
   }
 }
