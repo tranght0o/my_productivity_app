@@ -3,10 +3,6 @@ import '../../../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../auth_wrapper.dart';
 
-/// Screen that lets the user manage sensitive account settings
-/// - View their email
-/// - Change password via AuthService
-/// - Delete their account via AuthService
 class MyAccountScreen extends StatefulWidget {
   const MyAccountScreen({super.key});
 
@@ -27,7 +23,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// Change password using AuthService
   Future<void> _changePassword() async {
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
@@ -59,7 +54,6 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     }
   }
 
-  /// Delete account using AuthService
   Future<void> _deleteAccount() async {
     final currentPasswordController = TextEditingController();
     final user = _firebaseAuth.currentUser;
@@ -91,7 +85,14 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -134,6 +135,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
         title: const Text('My Account'),
         backgroundColor: Colors.deepPurple,
       ),
+      backgroundColor: Colors.grey[50],
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: _isLoading
@@ -141,13 +143,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Display email
                   Text('Email', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 6),
                   Text(user?.email ?? 'Unknown', style: const TextStyle(fontSize: 16, color: Colors.grey)),
                   const Divider(height: 32),
 
-                  // Change password section
                   Text('Change Password', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   TextField(
@@ -172,21 +172,44 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _changePassword,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-                      child: const Text('Update Password'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Update Password',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                   const Divider(height: 40),
 
-                  // Delete account section
                   Text('Danger Zone', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.red)),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _deleteAccount,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: const Text('Delete Account'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Delete Account',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],

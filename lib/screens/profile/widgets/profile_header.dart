@@ -104,11 +104,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       ),
       child: Row(
         children: [
-          // Avatar with initial letter
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white,
-            child: Image.asset('assets/images/logo.png')
+            backgroundImage: const AssetImage('assets/images/logo.png'),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -121,7 +120,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
               ),
             ),
           ),
-          // Edit name button
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: _editName,
