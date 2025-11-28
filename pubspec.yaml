@@ -39,9 +39,7 @@ dependencies:
   syncfusion_flutter_charts: ^23.1.44
   syncfusion_flutter_core: ^23.1.44 
 
-flutter:
-  assets:
-    - assets/images/logo.png
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -64,6 +62,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/images/logo.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
