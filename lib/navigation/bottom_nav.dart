@@ -4,6 +4,7 @@ import '../screens/library/library_screen.dart';
 import '../screens/insight/insight_screen.dart';
 import '../screens/profile/profile_screen.dart';
 
+/// Main bottom navigation bar that switches between app sections.
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
 
@@ -14,6 +15,7 @@ class BottomNav extends StatefulWidget {
 class _BottomNavState extends State<BottomNav> {
   int _currentIndex = 0;
 
+  /// Screens used inside the navigation
   final List<Widget> _screens = const [
     HomeScreen(),
     LibraryScreen(),
@@ -24,67 +26,106 @@ class _BottomNavState extends State<BottomNav> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      /// Keeps all pages alive using IndexedStack
+      body: IndexedStack(index: _currentIndex, children: _screens),
+
+      /// Styled bottom navigation container (shadow + minimal white card)
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
               offset: const Offset(0, -2),
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: Colors.deepPurple,
-          unselectedItemColor: Colors.grey,
-          showUnselectedLabels: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          items: [
-            _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
-            _buildNavItem(Icons.photo_library_outlined, Icons.photo_library, 'Library', 1),
-            _buildNavItem(Icons.insights_outlined, Icons.insights, 'Insight', 2),
-            _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
-          ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: Colors.deepPurple,
+            unselectedItemColor: Colors.grey.shade500,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w400,
+              fontSize: 12,
+            ),
+
+            /// Navigation items
+            items: [
+              _buildNavItem(Icons.home_outlined, Icons.home_rounded, 'Home', 0),
+              _buildNavItem(
+                Icons.photo_library_outlined,
+                Icons.photo_library_rounded,
+                'Library',
+                1,
+              ),
+              _buildNavItem(
+                Icons.insights_outlined,
+                Icons.insights_rounded,
+                'Insight',
+                2,
+              ),
+              _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  /// Builds each navigation bar item with animated dot indicator
   BottomNavigationBarItem _buildNavItem(
-      IconData icon, IconData activeIcon, String label, int index) {
+    IconData icon,
+    IconData activeIcon,
+    String label,
+    int index,
+  ) {
+    final bool isActive = _currentIndex == index;
+
     return BottomNavigationBarItem(
       icon: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon),
-          const SizedBox(height: 2),
-          if (_currentIndex == index)
-            Container(
-              width: 20,
-              height: 2,
-              color: Colors.deepPurple,
+          Icon(icon, size: 24),
+          const SizedBox(height: 4),
+
+          /// Dot indicator under icon (inactive = invisible)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isActive ? Colors.deepPurple : Colors.transparent,
             ),
+          ),
         ],
       ),
       activeIcon: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(activeIcon),
-          const SizedBox(height: 2),
+          Icon(activeIcon, size: 26, color: Colors.deepPurple),
+          const SizedBox(height: 4),
+
+          /// Active indicator dot
           Container(
-            width: 20,
-            height: 2,
-            color: Colors.deepPurple,
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.deepPurple,
+            ),
           ),
         ],
       ),

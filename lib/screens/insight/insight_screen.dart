@@ -85,7 +85,6 @@ class _InsightScreenState extends State<InsightScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Insights"),
-        backgroundColor: Colors.deepPurple,
       ),
       backgroundColor: Colors.grey.shade50,
       body: Column(

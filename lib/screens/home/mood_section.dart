@@ -57,14 +57,15 @@ class _MoodSectionState extends State<MoodSection> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.08),
-                blurRadius: 10,
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -78,9 +79,8 @@ class _MoodSectionState extends State<MoodSection> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Section Title
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -101,40 +101,41 @@ class _MoodSectionState extends State<MoodSection> {
                     ),
                   ),
 
-                  // Mood Emoji Row
-                  Padding(
-                    padding: EdgeInsets.zero,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: _moodOptions.map((m) {
-                        final bool selected = currentValue == m['value'];
-                        return GestureDetector(
-                          onTap: () => _saveMood(m['value']),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                              border: selected
-                                  ? Border.all(color: Colors.deepPurple, width: 2)
-                                  : null,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: _moodOptions.map((m) {
+                      final bool selected = currentValue == m['value'];
+                      return GestureDetector(
+                        onTap: () => _saveMood(m['value']),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? Colors.deepPurple.withOpacity(0.12)
+                                : Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selected
+                                  ? Colors.deepPurple
+                                  : Colors.grey.shade300,
+                              width: selected ? 2 : 1,
                             ),
-                            child: Text(
-                              m['emoji'],
-                              style: const TextStyle(fontSize: 28),
-                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: selected ? 10 : 4,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        );
-                      }).toList(),
-                    ),
+                          child: Text(
+                            m['emoji'],
+                            style: const TextStyle(fontSize: 28),
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
 
                   const SizedBox(height: 16),

@@ -166,26 +166,34 @@ class _HabitSectionState extends State<HabitSection> {
                         // Display active habits
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                              width: 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                           child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            minVerticalPadding: 12,
                             leading: IconButton(
                               icon: Icon(
                                 log.done
                                     ? Icons.check_circle
                                     : Icons.circle_outlined,
                                 color: log.done
-                                    ? Colors.deepPurple
-                                    : Colors.grey,
+                                    ? Colors.deepPurple.shade400
+                                    : Colors.grey.shade400,
+                                size: 26,
                               ),
                               // Toggle completion state for this habit
                               onPressed: () async {
@@ -207,12 +215,13 @@ class _HabitSectionState extends State<HabitSection> {
                               habit.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w500,
+                                fontSize: 15,
                               ),
                             ),
                             trailing: IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.more_vert,
-                                color: Colors.grey,
+                                color: Colors.grey.shade500,
                               ),
                               onPressed: () => _showHabitOptions(habit),
                             ),

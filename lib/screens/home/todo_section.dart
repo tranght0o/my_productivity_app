@@ -44,7 +44,6 @@ class _TodoSectionState extends State<TodoSection> {
                 onTap: () async {
                   Navigator.pop(context);
                   
-                  // Show confirmation dialog
                   final confirmed = await MessageHelper.showConfirmDialog(
                     context: context,
                     title: 'Delete Task',
@@ -118,25 +117,34 @@ class _TodoSectionState extends State<TodoSection> {
                   children: todos.map((todo) {
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        minVerticalPadding: 12,
                         leading: IconButton(
                           icon: Icon(
                             todo.done
                                 ? Icons.check_circle
                                 : Icons.circle_outlined,
-                            color:
-                                todo.done ? Colors.deepPurple : Colors.grey,
+                            color: todo.done
+                                ? Colors.deepPurple.shade400
+                                : Colors.grey.shade400,
+                            size: 26,
                           ),
                           onPressed: () async {
                             try {
@@ -152,14 +160,19 @@ class _TodoSectionState extends State<TodoSection> {
                         title: Text(
                           todo.title,
                           style: TextStyle(
+                            fontSize: 15,
                             fontWeight: FontWeight.w500,
                             decoration: todo.done
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
+                            color: todo.done ? Colors.grey : Colors.black87,
                           ),
                         ),
                         trailing: IconButton(
-                          icon: const Icon(Icons.more_vert, color: Colors.grey),
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Colors.grey.shade500,
+                          ),
                           onPressed: () => _showTaskOptions(todo),
                         ),
                       ),

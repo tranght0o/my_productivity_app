@@ -159,173 +159,206 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
         top: 20,
       ),
       child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title
-              Text(
-                isEdit ? 'Edit Habit' : 'Add Habit',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-              const SizedBox(height: 12),
-
-              // Name field
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Habit name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.fitness_center),
-                ),
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const SizedBox(height: 12),
-
-              // Date pickers
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickDate(isStart: true),
-                      icon: const Icon(Icons.calendar_today, size: 18),
-                      label: Text(
-                        _startDate == null
-                            ? 'Start date'
-                            : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pickDate(isStart: false),
-                      icon: const Icon(Icons.event, size: 18),
-                      label: Text(
-                        _endDate == null
-                            ? 'End (optional)'
-                            : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Frequency selector
-              DropdownButtonFormField<String>(
-                value: _frequency,
-                decoration: const InputDecoration(
-                  labelText: 'Frequency',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.repeat),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                  DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                ],
-                onChanged: (val) {
-                  setState(() => _frequency = val ?? 'daily');
-                },
-              ),
-              const SizedBox(height: 12),
-
-              // Weekly selector
-              if (_frequency == 'weekly') ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Select days:',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: _daysOfWeek.map((day) {
-                    return ChoiceChip(
-                      label: Text(day),
-                      selected: _selectedDaysOfWeek.contains(day),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedDaysOfWeek.add(day);
-                          } else {
-                            _selectedDaysOfWeek.remove(day);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 8),
-              ],
-
-              // Monthly selector
-              if (_frequency == 'monthly') ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Select days of month:',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: List.generate(31, (i) {
-                    final day = i + 1;
-                    final selected = _selectedDaysOfMonth.contains(day);
-                    return ChoiceChip(
-                      label: Text(day.toString()),
-                      selected: selected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedDaysOfMonth.add(day);
-                          } else {
-                            _selectedDaysOfMonth.remove(day);
-                          }
-                        });
-                      },
-                    );
-                  }),
-                ),
-                const SizedBox(height: 8),
-              ],
-
-              const SizedBox(height: 16),
-
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(isEdit ? 'Update' : 'Save'),
-                ),
-              ),
-              const SizedBox(height: 16),
             ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isEdit ? 'Edit Habit' : 'Add Habit',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Habit name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.fitness_center),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickDate(isStart: true),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        icon: const Icon(Icons.calendar_today, size: 18),
+                        label: Text(
+                          _startDate == null
+                              ? 'Start date'
+                              : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickDate(isStart: false),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        icon: const Icon(Icons.event, size: 18),
+                        label: Text(
+                          _endDate == null
+                              ? 'End (optional)'
+                              : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                DropdownButtonFormField<String>(
+                  value: _frequency,
+                  decoration: InputDecoration(
+                    labelText: 'Frequency',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.repeat),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                    DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                    DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                  ],
+                  onChanged: (val) {
+                    setState(() => _frequency = val ?? 'daily');
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                if (_frequency == 'weekly') ...[
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Select days:',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: _daysOfWeek.map((day) {
+                      return ChoiceChip(
+                        label: Text(day),
+                        selected: _selectedDaysOfWeek.contains(day),
+                        selectedColor: Colors.deepPurple.withOpacity(0.15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedDaysOfWeek.add(day);
+                            } else {
+                              _selectedDaysOfWeek.remove(day);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                if (_frequency == 'monthly') ...[
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Select days of month:',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: List.generate(31, (i) {
+                      final day = i + 1;
+                      final selected = _selectedDaysOfMonth.contains(day);
+                      return ChoiceChip(
+                        label: Text(day.toString()),
+                        selected: selected,
+                        selectedColor: Colors.deepPurple.withOpacity(0.15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedDaysOfMonth.add(day);
+                            } else {
+                              _selectedDaysOfMonth.remove(day);
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(isEdit ? 'Update' : 'Save',
+                            style: const TextStyle(color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

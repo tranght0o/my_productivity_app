@@ -80,22 +80,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Schedule')),
+      appBar: AppBar(
+        title: const Text('My Schedule'),
+        elevation: 0,
+        backgroundColor: Colors.grey[50],
+        foregroundColor: Colors.black,
+      ),
       backgroundColor: Colors.grey[50],
       body: Column(
         children: [
           // Calendar card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -108,27 +114,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.chevron_left, size: 24),
+                        icon: const Icon(Icons.chevron_left, size: 22),
                         onPressed: _previousMonth,
-                        color: Colors.deepPurple,
+                        color: Colors.deepPurple.shade400,
                       ),
                       Text(
                         "${_focusedDay.month}/${_focusedDay.year}",
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.deepPurple),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: Colors.deepPurple.shade400,
+                        ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chevron_right, size: 24),
+                        icon: const Icon(Icons.chevron_right, size: 22),
                         onPressed: _nextMonth,
-                        color: Colors.deepPurple,
+                        color: Colors.deepPurple.shade400,
                       ),
                     ],
                   ),
                 ),
 
-                // Top-right toggle button (grey, subtle)
+                // Top-right toggle button
                 Positioned(
                   top: 0,
                   right: 0,
@@ -137,16 +144,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       _calendarFormat == CalendarFormat.month
                           ? Icons.view_week
                           : Icons.view_module,
-                      color: Colors.grey,
+                      color: Colors.grey.shade500,
                       size: 20,
                     ),
                     onPressed: _toggleCalendarFormat,
                   ),
                 ),
 
-                // Calendar widget with padding for header
+                // Calendar widget
                 Padding(
-                  padding: const EdgeInsets.only(top: 50), // add space between title and weekdays
+                  padding: const EdgeInsets.only(top: 55),
                   child: TableCalendar(
                     focusedDay: _focusedDay,
                     firstDay: DateTime(2000),
@@ -164,11 +171,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         _calendarFormat = format;
                       });
                     },
-                    calendarStyle: const CalendarStyle(
+                    calendarStyle: CalendarStyle(
                       outsideDaysVisible: false,
+                      todayDecoration: BoxDecoration(
+                        color: Colors.deepPurple.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      selectedDecoration: BoxDecoration(
+                        color: Colors.deepPurple.shade300,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     headerVisible: false,
-                    rowHeight: 48,
+                    rowHeight: 46,
                   ),
                 ),
               ],
@@ -196,7 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddOptions,
-        child: const Icon(Icons.add),
+        backgroundColor: Colors.deepPurple.shade400,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

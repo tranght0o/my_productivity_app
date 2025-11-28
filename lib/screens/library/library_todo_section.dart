@@ -25,7 +25,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
     _fetchTodos();
   }
 
-  /// Load todos for selected month from Firestore (OPTIMIZED)
+  /// Load todos for selected month from Firestore 
   Future<void> _fetchTodos() async {
     try {
       final todos = await _todoService.getTodosByMonth(
@@ -150,22 +150,25 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
             children: [
               TextButton.icon(
                 onPressed: _pickMonth,
-                icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+                icon: Icon(
+                  Icons.calendar_today,
+                  color: Colors.deepPurple.shade400,
+                  size: 20,
+                ),
                 label: Text(
                   '${_selectedMonth.month}/${_selectedMonth.year}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.deepPurple.shade400,
                   ),
                 ),
               ),
               IconButton(
                 icon: Icon(
                   _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: Colors.deepPurple,
+                  color: Colors.deepPurple.shade400,
                 ),
                 onPressed: _toggleSortOrder,
-                tooltip: 'Toggle sort order',
               ),
             ],
           ),
@@ -181,16 +184,18 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                 '$totalCount tasks, $doneCount done',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
               ),
               const SizedBox(height: 6),
-              LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(8),
-                backgroundColor: Colors.grey[200],
-                color: Colors.deepPurple,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Colors.deepPurple.shade300,
+                ),
               ),
             ],
           ),
@@ -206,7 +211,7 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: sortedDays.length,
                   itemBuilder: (context, index) {
                     final day = sortedDays[index];
@@ -215,72 +220,81 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Date label
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          padding: const EdgeInsets.only(top: 10, bottom: 6),
                           child: Text(
                             '${day.day}/${day.month}/${day.year}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
                             ),
                           ),
                         ),
+
+                        // Task cards
                         Column(
                           children: dayTodos.map((todo) {
                             return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 1,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                               child: ListTile(
-                                leading: IconButton(
-                                  icon: Icon(
-                                    todo.done
-                                        ? Icons.check_circle
-                                        : Icons.circle_outlined,
-                                    color: todo.done
-                                        ? Colors.deepPurple
-                                        : Colors.grey,
-                                  ),
-                                  onPressed: () async {
+                                contentPadding: EdgeInsets.zero,
+                                minVerticalPadding: 12,
+                                leading: GestureDetector(
+                                  onTap: () async {
                                     try {
-                                      await _todoService.toggleDone(
-                                          todo.id, todo.done);
-                                      setState(() {
-                                        todo.done = !todo.done;
-                                      });
+                                      await _todoService.toggleDone(todo.id, todo.done);
+                                      setState(() => todo.done = !todo.done);
                                     } catch (e) {
                                       if (mounted) {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
-                                          SnackBar(
-                                              content:
-                                                  Text('Failed to update: $e')),
+                                          SnackBar(content: Text('Failed to update: $e')),
                                         );
                                       }
                                     }
                                   },
+                                  child: Icon(
+                                    todo.done ? Icons.check_circle : Icons.circle_outlined,
+                                    color: todo.done
+                                        ? Colors.deepPurple.shade400
+                                        : Colors.grey.shade400,
+                                    size: 26,
+                                  ),
                                 ),
                                 title: Text(
                                   todo.title,
                                   style: TextStyle(
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                     decoration: todo.done
                                         ? TextDecoration.lineThrough
                                         : TextDecoration.none,
+                                    color: todo.done ? Colors.grey : Colors.black87,
                                   ),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.more_vert,
-                                      color: Colors.grey),
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: Colors.grey.shade500,
+                                  ),
                                   onPressed: () => _showTaskOptions(todo),
                                 ),
                               ),
@@ -295,4 +309,4 @@ class _LibraryTodoSectionState extends State<LibraryTodoSection> {
       ],
     );
   }
-} 
+}
