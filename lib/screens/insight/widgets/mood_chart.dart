@@ -7,7 +7,7 @@ import '../../../models/mood_model.dart';
 /// Line chart showing mood trend for each day of the week
 /// Y-axis shows emoji faces (1-5 scale), X-axis shows day names
 class MoodChart extends StatefulWidget {
-  final DateTime selectedWeek; // Any date in the target week
+  final DateTime selectedWeek;
 
   const MoodChart({super.key, required this.selectedWeek});
 
@@ -20,7 +20,6 @@ class _MoodChartState extends State<MoodChart> {
   List<Mood> _moods = [];
   bool _loading = true;
 
-  // Mood scale mapping (must match mood_section.dart)
   final List<Map<String, dynamic>> _moodOptions = [
     {'emoji': '😢', 'value': 1, 'label': 'Terrible'},
     {'emoji': '😞', 'value': 2, 'label': 'Bad'},
@@ -38,19 +37,16 @@ class _MoodChartState extends State<MoodChart> {
   @override
   void didUpdateWidget(MoodChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload when week changes
     if (oldWidget.selectedWeek != widget.selectedWeek) {
       _loadData();
     }
   }
 
-  /// Get Monday of the week
   DateTime _getMonday(DateTime date) {
     final daysFromMonday = date.weekday - DateTime.monday;
     return DateTime(date.year, date.month, date.day - daysFromMonday);
   }
 
-  /// Load moods for the selected week
   Future<void> _loadData() async {
     setState(() => _loading = true);
 
@@ -76,7 +72,6 @@ class _MoodChartState extends State<MoodChart> {
     }
   }
 
-  /// Get emoji for mood value
   String _emojiForValue(int value) {
     final match = _moodOptions.firstWhere(
       (e) => e['value'] == value,
@@ -85,7 +80,6 @@ class _MoodChartState extends State<MoodChart> {
     return match['emoji'];
   }
 
-  /// Create line chart spots (only days with mood data)
   List<FlSpot> _createSpots() {
     final monday = _getMonday(widget.selectedWeek);
     final spots = <FlSpot>[];
@@ -93,7 +87,6 @@ class _MoodChartState extends State<MoodChart> {
     for (int i = 0; i < 7; i++) {
       final date = monday.add(Duration(days: i));
       
-      // Find mood for this day
       final mood = _moods.firstWhere(
         (m) => m.date.year == date.year && 
                m.date.month == date.month && 
@@ -102,11 +95,10 @@ class _MoodChartState extends State<MoodChart> {
           id: '',
           userId: '',
           date: date,
-          moodValue: 0, // 0 means no data
+          moodValue: 0,
         ),
       );
 
-      // Only add spot if mood exists
       if (mood.moodValue > 0) {
         spots.add(FlSpot(i.toDouble(), mood.moodValue.toDouble()));
       }
@@ -115,10 +107,9 @@ class _MoodChartState extends State<MoodChart> {
     return spots;
   }
 
-  /// Get day label (Mon, Tue, etc.)
-  String _getDayLabel(DateTime date) {
+  String _getDayLabel(int index) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[date.weekday - 1];
+    return days[index];
   }
 
   @override
@@ -135,7 +126,6 @@ class _MoodChartState extends State<MoodChart> {
     }
 
     final spots = _createSpots();
-    final monday = _getMonday(widget.selectedWeek);
     final hasData = spots.isNotEmpty;
 
     return Card(
@@ -147,7 +137,6 @@ class _MoodChartState extends State<MoodChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Chart title
             const Text(
               "Mood Chart",
               style: TextStyle(
@@ -157,7 +146,6 @@ class _MoodChartState extends State<MoodChart> {
             ),
             const SizedBox(height: 16),
 
-            // Chart or empty state
             !hasData
                 ? Container(
                     height: 220,
@@ -185,7 +173,6 @@ class _MoodChartState extends State<MoodChart> {
                         gridData: FlGridData(show: false),
                         borderData: FlBorderData(show: false),
                         titlesData: FlTitlesData(
-                          // Bottom titles (day names)
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -195,9 +182,8 @@ class _MoodChartState extends State<MoodChart> {
                                 if (index < 0 || index >= 7) {
                                   return const SizedBox();
                                 }
-                                final date = monday.add(Duration(days: index));
                                 return Text(
-                                  _getDayLabel(date),
+                                  _getDayLabel(index),
                                   style: const TextStyle(
                                     fontSize: 10,
                                     color: Colors.grey,
@@ -206,14 +192,12 @@ class _MoodChartState extends State<MoodChart> {
                               },
                             ),
                           ),
-                          // Left titles (mood emojis)
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               interval: 1,
                               reservedSize: 28,
                               getTitlesWidget: (value, meta) {
-                                // Only show emojis for integer values 1-5
                                 if (value < 1 || value > 5 || value != value.roundToDouble()) {
                                   return const SizedBox();
                                 }
@@ -231,7 +215,6 @@ class _MoodChartState extends State<MoodChart> {
                             sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
-                        // Line data
                         lineBarsData: [
                           LineChartBarData(
                             isCurved: true,
@@ -263,19 +246,17 @@ class _MoodChartState extends State<MoodChart> {
                             spots: spots,
                           ),
                         ],
-                        // Touch interaction
                         lineTouchData: LineTouchData(
                           touchTooltipData: LineTouchTooltipData(
                             getTooltipColor: (_) => Colors.deepPurple,
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
                                 final dayIndex = spot.x.toInt();
-                                final date = monday.add(Duration(days: dayIndex));
                                 final moodValue = spot.y.toInt();
                                 final emoji = _emojiForValue(moodValue);
                                 
                                 return LineTooltipItem(
-                                  '$emoji ${_getDayLabel(date)}',
+                                  '$emoji ${_getDayLabel(dayIndex)}',
                                   const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,

@@ -180,7 +180,10 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                       ),
                       child: const Text(
                         'Save',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -210,7 +213,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
       children: [
         // Header: month navigation
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -257,7 +260,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                 // Calendar Card
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -350,7 +353,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                             children: [
                               Text(
                                 m['emoji'],
-                                style: const TextStyle(fontSize: 32),
+                                style: const TextStyle(fontSize: 28),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -383,52 +386,54 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     final Mood? mood = _moodByDay[key];
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (mood != null && mood.moodValue > 0) ...[
-            // Has mood: show emoji + day number
-            Text(
-              _emojiForValue(mood.moodValue),
-              style: const TextStyle(fontSize: 32),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+      child: FittedBox(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (mood != null && mood.moodValue > 0) ...[
+              // Has mood: show emoji + day number
+              Text(
+                _emojiForValue(mood.moodValue),
+                style: const TextStyle(fontSize: 24),
               ),
-            ),
-          ] else ...[
-            // No mood: show empty circle + day number
-            Container(
-              width: 32, // Same size as emoji
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey.shade100,
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.sentiment_satisfied_outlined,
-                  size: 20,
-                  color: Colors.grey.shade300,
+              const SizedBox(height: 2),
+              Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade400,
+            ] else ...[
+              // No mood: show empty circle + day number
+              Container(
+                width: 28, // Same size as emoji
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey.shade100,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.sentiment_satisfied_outlined,
+                    size: 18,
+                    color: Colors.grey.shade300,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

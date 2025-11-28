@@ -54,78 +54,95 @@ class _MoodSectionState extends State<MoodSection> {
     return Container(
       color: Colors.grey[50],
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: StreamBuilder<Mood?>(
-        stream: _moodService.getMoodForDay(widget.selectedDay),
-        builder: (context, snapshot) {
-          final currentMood = snapshot.data;
-          final currentValue = currentMood?.moodValue ?? _tempSelected;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Section Title
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'How are you feeling?',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    if (currentValue != null)
-                      Text(
-                        _getLabelForValue(currentValue),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                  ],
-                ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-
-              // Mood Emoji Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: _moodOptions.map((m) {
-                    final bool selected = currentValue == m['value'];
-                    return GestureDetector(
-                      onTap: () => _saveMood(m['value']),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                          border: selected
-                              ? Border.all(color: Colors.deepPurple, width: 2)
-                              : null,
-                        ),
-                        child: Text(
-                          m['emoji'],
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              const SizedBox(height: 16),
             ],
-          );
-        },
+          ),
+          child: StreamBuilder<Mood?>(
+            stream: _moodService.getMoodForDay(widget.selectedDay),
+            builder: (context, snapshot) {
+              final currentMood = snapshot.data;
+              final currentValue = currentMood?.moodValue ?? _tempSelected;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section Title
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'How are you feeling?',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        if (currentValue != null)
+                          Text(
+                            _getLabelForValue(currentValue),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Mood Emoji Row
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: _moodOptions.map((m) {
+                        final bool selected = currentValue == m['value'];
+                        return GestureDetector(
+                          onTap: () => _saveMood(m['value']),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                              border: selected
+                                  ? Border.all(color: Colors.deepPurple, width: 2)
+                                  : null,
+                            ),
+                            child: Text(
+                              m['emoji'],
+                              style: const TextStyle(fontSize: 28),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
