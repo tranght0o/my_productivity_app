@@ -3,6 +3,7 @@ import 'package:month_picker_dialog/month_picker_dialog.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/mood_model.dart';
 import '../../services/mood_service.dart';
+import '../../widgets/mood_picker_bottom_sheet.dart';
 
 class LibraryMoodSection extends StatefulWidget {
   const LibraryMoodSection({super.key});
@@ -18,7 +19,7 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
-  // Mood scale (must match mood_section.dart)
+  // Mood options
   final List<Map<String, dynamic>> _moodOptions = [
     {'emoji': '😢', 'value': 1, 'label': 'Terrible'},
     {'emoji': '😞', 'value': 2, 'label': 'Bad'},
@@ -30,29 +31,18 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
   @override
   void initState() {
     super.initState();
-    _fetchMoods();
   }
 
-  /// Fetch moods for the selected month only
-  Future<void> _fetchMoods() async {
-    try {
-      final moods = await _moodService.getMoodsByMonth(
-        _selectedMonth.year,
-        _selectedMonth.month,
-      );
-      setState(() {
-        _moodByDay = {for (var m in moods) _dayKeyFromDate(m.date): m};
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load moods: $e')),
-        );
-      }
-    }
+  // Stream moods for selected month (Realtime)
+  Stream<Map<String, Mood>> _moodStream() {
+    final y = _selectedMonth.year;
+    final m = _selectedMonth.month;
+    return _moodService
+        .getMoodsByMonthStream(y, m)
+        .map((list) => {for (var m in list) _dayKeyFromDate(m.date): m});
   }
 
-  /// Show month picker and reload data
+  // Month picker
   Future<void> _pickMonth() async {
     final picked = await showMonthPicker(
       context: context,
@@ -63,7 +53,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
         _selectedMonth = DateTime(picked.year, picked.month);
         _focusedDay = DateTime(picked.year, picked.month);
       });
-      _fetchMoods();
     }
   }
 
@@ -82,125 +71,26 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
     return match['emoji'];
   }
 
-  /// Show bottom sheet to select mood (no note)
+  // Mood Picker BottomSheet
   void _showMoodPicker(DateTime day) {
     final currentMood = _moodByDay[_dayKeyFromDate(day)];
     int? selectedValue = currentMood?.moodValue;
 
-    showModalBottomSheet(
+    showMoodPickerBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title
-                  Text(
-                    'How are you feeling?',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 5 Emoji buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _moodOptions.map((m) {
-                      final isSelected = selectedValue == m['value'];
-                      return GestureDetector(
-                        onTap: () {
-                          setModalState(() => selectedValue = m['value']);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                            border: isSelected
-                                ? Border.all(color: Colors.deepPurple, width: 2)
-                                : null,
-                          ),
-                          child: Text(
-                            m['emoji'],
-                            style: const TextStyle(fontSize: 28),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: selectedValue == null
-                          ? null
-                          : () async {
-                              try {
-                                await _moodService.addOrUpdateMood(
-                                  day,
-                                  selectedValue!,
-                                );
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  _fetchMoods();
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Failed to save: $e')),
-                                  );
-                                }
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
+      day: day,
+      moodOptions: {
+        for (var m in _moodOptions) m['value']: m,
       },
+      moodService: _moodService,
+      currentValue: selectedValue,
     );
   }
 
-  /// Calculate mood count statistics
   Map<int, int> _getMoodCounts() {
     final counts = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
     for (var mood in _moodByDay.values) {
-      if (mood.moodValue >= 1 && mood.moodValue <= 5) {
+      if (counts.containsKey(mood.moodValue)) {
         counts[mood.moodValue] = counts[mood.moodValue]! + 1;
       }
     }
@@ -209,178 +99,200 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Header: month navigation
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
-                    _focusedDay = _selectedMonth;
-                  });
-                  _fetchMoods();
-                },
-                icon: const Icon(Icons.chevron_left, color: Colors.black87),
-              ),
-              GestureDetector(
-                onTap: _pickMonth,
-                child: Text(
-                  '${_getMonthName(_selectedMonth.month)} ${_selectedMonth.year}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
-                    _focusedDay = _selectedMonth;
-                  });
-                  _fetchMoods();
-                },
-                icon: const Icon(Icons.chevron_right, color: Colors.black87),
-              ),
-            ],
-          ),
-        ),
+    return StreamBuilder<Map<String, Mood>>(
+      stream: _moodStream(),
+      builder: (context, snapshot) {
+        _moodByDay = snapshot.data ?? {};
+        return Column(
+          children: [
 
-        // Calendar
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Calendar Card
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Calendar card
+                    Container(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: TableCalendar(
-                    firstDay: DateTime.utc(2020, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
-                    focusedDay: _focusedDay,
-                    currentDay: _selectedMonth,
-                    selectedDayPredicate: (day) => false,
-                    onDaySelected: (selectedDay, focusedDay) {
-                      _showMoodPicker(selectedDay);
-                    },
-                    onPageChanged: (focusedDay) {
-                      setState(() {
-                        _focusedDay = focusedDay;
-                        _selectedMonth = DateTime(focusedDay.year, focusedDay.month);
-                      });
-                      _fetchMoods();
-                    },
-                    calendarFormat: CalendarFormat.month,
-                    headerVisible: false,
-                    daysOfWeekHeight: 40,
-                    daysOfWeekStyle: DaysOfWeekStyle(
-                      weekdayStyle: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
-                      weekendStyle: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    calendarStyle: CalendarStyle(
-                      outsideDaysVisible: false,
-                      todayDecoration: const BoxDecoration(),
-                      rowDecoration: const BoxDecoration(),
-                      tablePadding: const EdgeInsets.symmetric(vertical: 8),
-                      cellMargin: const EdgeInsets.all(4),
-                      defaultTextStyle: const TextStyle(fontSize: 12),
-                    ),
-                    calendarBuilders: CalendarBuilders(
-                      defaultBuilder: (context, day, _) => _buildDayCell(day),
-                      todayBuilder: (context, day, _) => _buildDayCell(day),
-                    ),
-                  ),
-                ),
 
-                // Mood Count Statistics
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Mood Count',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: _moodOptions.map((m) {
-                          final count = _getMoodCounts()[m['value']] ?? 0;
-                          return Column(
+                      // Month Switcher and card
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                m['emoji'],
-                                style: const TextStyle(fontSize: 28),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left, size: 22),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedMonth = DateTime(
+                                        _selectedMonth.year,
+                                        _selectedMonth.month - 1);
+                                    _focusedDay = _selectedMonth;
+                                  });
+                                },
+                                color: Colors.deepPurple.shade400,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$count',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
+                              GestureDetector(
+                                onTap: _pickMonth,
+                                child: Text(
+                                  '${_getMonthName(_selectedMonth.month)} ${_selectedMonth.year}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 17,
+                                    color: Colors.deepPurple.shade400,
+                                  ),
                                 ),
                               ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right, size: 22),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedMonth = DateTime(
+                                        _selectedMonth.year,
+                                        _selectedMonth.month + 1);
+                                    _focusedDay = _selectedMonth;
+                                  });
+                                },
+                                color: Colors.deepPurple.shade400,
+                              ),
                             ],
-                          );
-                        }).toList(),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          TableCalendar(
+                            firstDay: DateTime.utc(2020, 1, 1),
+                            lastDay: DateTime.utc(2030, 12, 31),
+                            focusedDay: _focusedDay,
+                            currentDay: _selectedMonth,
+                            selectedDayPredicate: (day) => false,
+                            onDaySelected: (selectedDay, focusedDay) {
+                              _showMoodPicker(selectedDay);
+                            },
+                            onPageChanged: (focusedDay) {
+                              setState(() {
+                                _focusedDay = focusedDay;
+                                _selectedMonth =
+                                    DateTime(focusedDay.year, focusedDay.month);
+                              });
+                            },
+                            calendarFormat: CalendarFormat.month,
+                            headerVisible: false,
+                            daysOfWeekHeight: 40,
+                            daysOfWeekStyle: DaysOfWeekStyle(
+                              weekdayStyle: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
+                              weekendStyle: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            calendarStyle: CalendarStyle(
+                              outsideDaysVisible: false,
+                              todayDecoration: const BoxDecoration(),
+                              rowDecoration: const BoxDecoration(),
+                              tablePadding:
+                                  const EdgeInsets.symmetric(vertical: 8),
+                              cellMargin: const EdgeInsets.all(4),
+                              defaultTextStyle:
+                                  const TextStyle(fontSize: 12),
+                            ),
+                            calendarBuilders: CalendarBuilders(
+                              defaultBuilder: (context, day, _) =>
+                                  _buildDayCell(day),
+                              todayBuilder: (context, day, _) =>
+                                  _buildDayCell(day),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Mood count
+                    Container(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Mood Count',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: _moodOptions.map((m) {
+                              final count =
+                                  _getMoodCounts()[m['value']] ?? 0;
+                              return Column(
+                                children: [
+                                  Text(
+                                    m['emoji'],
+                                    style: const TextStyle(fontSize: 28),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.deepPurple,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
-  /// Build individual day cell (emoji + day number, NO label)
   Widget _buildDayCell(DateTime day) {
     final key = _dayKeyFromDate(day);
     final Mood? mood = _moodByDay[key];
@@ -392,7 +304,6 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (mood != null && mood.moodValue > 0) ...[
-              // Has mood: show emoji + day number
               Text(
                 _emojiForValue(mood.moodValue),
                 style: const TextStyle(fontSize: 24),
@@ -407,9 +318,8 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
                 ),
               ),
             ] else ...[
-              // No mood: show empty circle + day number
               Container(
-                width: 28, // Same size as emoji
+                width: 28,
                 height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
@@ -440,8 +350,18 @@ class _LibraryMoodSectionState extends State<LibraryMoodSection> {
 
   String _getMonthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return months[month - 1];
   }

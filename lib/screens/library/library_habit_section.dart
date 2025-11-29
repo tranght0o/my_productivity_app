@@ -139,7 +139,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     return Column(
       children: [
 
-        // 🌟 Modern filter & sort bar (NEW UI)
+        // filter & sort bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -159,42 +159,26 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
               const SizedBox(width: 12),
 
-              // Sort Button
+              // SORT ICON 
               InkWell(
                 onTap: () {
                   setState(() {
-                    if (_sortBy == 'newest') {
-                      _sortBy = 'oldest';
-                    } else {
-                      _sortBy = 'newest';
-                    }
+                    _sortBy = _sortBy == 'newest' ? 'oldest' : 'newest';
                   });
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.deepPurple.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _sortBy == 'newest'
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
-                        size: 18,
-                        color: purple,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Sort",
-                        style: TextStyle(
-                          color: purple,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )
-                    ],
+                  child: Icon(
+                    _sortBy == 'newest'
+                        ? Icons.arrow_downward
+                        : Icons.arrow_upward,
+                    size: 18,
+                    color: purple,
                   ),
                 ),
               ),
@@ -202,9 +186,8 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
           ),
         ),
 
-        // ------------------------------------------------------------
 
-        // Habits list
+
         Expanded(
           child: StreamBuilder<List<Habit>>(
             stream: _habitService.getHabits(),
@@ -215,7 +198,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
               final habits = snapshot.data ?? [];
               
-              // Apply search filter
               final searchFiltered = widget.searchQuery.isEmpty
                   ? habits
                   : habits.where((h) => h.name
@@ -223,7 +205,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
                       .contains(widget.searchQuery.toLowerCase()))
                       .toList();
 
-              // Apply filter and sort
               final filteredHabits = _filterAndSortHabits(searchFiltered);
 
               if (filteredHabits.isEmpty) {
@@ -274,7 +255,7 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     );
   }
 
-  // Habit Card (unchanged)
+  // Habit Card 
   Widget _buildHabitCard(Habit habit) {
     return GestureDetector(
       onTap: () {
@@ -341,7 +322,6 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
               ),
             ),
 
-            // Options menu button
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.grey),
               onPressed: () => _showOptionsMenu(habit),

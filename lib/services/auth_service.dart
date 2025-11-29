@@ -5,6 +5,7 @@ import '../models/app_user.dart';
 class AuthService {
   // Firebase authentication instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Get the current logged-in user
   User? get currentUser => _auth.currentUser;
@@ -28,8 +29,6 @@ class AuthService {
       // Update display name (user's name)
       await cred.user?.updateDisplayName(name);
 
-      // Removed sendEmailVerification()
-
       // Create AppUser object
       final newUser = AppUser(
         uid: cred.user!.uid,
@@ -40,7 +39,7 @@ class AuthService {
       );
 
       // Save user info to Firestore
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('users')
           .doc(newUser.uid)
           .set(newUser.toMap());
@@ -63,9 +62,6 @@ class AuthService {
   }) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-
-      // Removed email verification check
-
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
@@ -113,7 +109,7 @@ class AuthService {
     }
   }
 
-  // Delete user account after re-authenticating
+  // Delete user account and all associated data
   Future<String?> deleteAccount({
     required String currentPassword,
   }) async {
@@ -130,11 +126,13 @@ class AuthService {
       );
       await user.reauthenticateWithCredential(credential);
 
-      // Delete from Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .delete();
+      final uid = user.uid;
+
+      // Delete all user data from Firestore
+      await _deleteAllUserData(uid);
+
+      // Delete user profile from Firestore
+      await _firestore.collection('users').doc(uid).delete();
 
       // Delete from Firebase Authentication
       await user.delete();
@@ -144,6 +142,87 @@ class AuthService {
       return _mapError(e.code);
     } catch (_) {
       return 'Unexpected error deleting account';
+    }
+  }
+
+  // Delete all user data from Firestore collections
+  Future<void> _deleteAllUserData(String uid) async {
+    try {
+      // Use batch for efficient deletion
+      final batch = _firestore.batch();
+      int batchCount = 0;
+      const batchLimit = 500; // Firestore batch limit
+
+      // Delete all habits
+      final habitsQuery = await _firestore
+          .collection('habits')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (var doc in habitsQuery.docs) {
+        batch.delete(doc.reference);
+        batchCount++;
+
+        if (batchCount >= batchLimit) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      // Delete all habit logs
+      final logsQuery = await _firestore
+          .collection('habitLogs')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (var doc in logsQuery.docs) {
+        batch.delete(doc.reference);
+        batchCount++;
+
+        if (batchCount >= batchLimit) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      // Delete all todos
+      final todosQuery = await _firestore
+          .collection('todos')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (var doc in todosQuery.docs) {
+        batch.delete(doc.reference);
+        batchCount++;
+
+        if (batchCount >= batchLimit) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      // Delete all moods (if you have a moods collection)
+      final moodsQuery = await _firestore
+          .collection('moods')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (var doc in moodsQuery.docs) {
+        batch.delete(doc.reference);
+        batchCount++;
+
+        if (batchCount >= batchLimit) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      // Commit remaining batch operations
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+    } catch (e) {
+      throw Exception('Failed to delete user data: $e');
     }
   }
 

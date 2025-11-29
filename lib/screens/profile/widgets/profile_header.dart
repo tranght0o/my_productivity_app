@@ -85,7 +85,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                       color: Colors.white,
                     ),
                   )
-                : const Text("Save"),
+                : const Text(
+                    "Save",
+                    style: TextStyle(color: Colors.white), 
+                  ),
           ),
         ],
       ),
@@ -107,7 +110,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           CircleAvatar(
             radius: 30,
             backgroundColor: Colors.white,
-            backgroundImage: const AssetImage('assets/images/logo.png'),
+            backgroundImage: const AssetImage('assets/images/profile.png'),
           ),
           const SizedBox(width: 16),
           Expanded(

@@ -43,7 +43,7 @@ class _TodoSectionState extends State<TodoSection> {
                 title: const Text('Delete', style: TextStyle(color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context);
-                  
+
                   final confirmed = await MessageHelper.showConfirmDialog(
                     context: context,
                     title: 'Delete Task',
@@ -74,18 +74,19 @@ class _TodoSectionState extends State<TodoSection> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey[50],
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      color: const Color(0xFFF5F6FA),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
             child: Text(
               'To Do',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
             ),
           ),
+
           StreamBuilder<List<Todo>>(
             stream: _todoService.getTodosForDay(widget.selectedDay),
             builder: (context, snapshot) {
@@ -96,7 +97,7 @@ class _TodoSectionState extends State<TodoSection> {
               final todos = snapshot.data!;
               if (todos.isEmpty) {
                 return SizedBox(
-                  height: 50,
+                  height: 60,
                   width: double.infinity,
                   child: Center(
                     child: Text(
@@ -104,7 +105,7 @@ class _TodoSectionState extends State<TodoSection> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
-                        color: Colors.grey[600],
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -121,15 +122,11 @@ class _TodoSectionState extends State<TodoSection> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -152,7 +149,9 @@ class _TodoSectionState extends State<TodoSection> {
                             } catch (e) {
                               if (mounted) {
                                 MessageHelper.showError(
-                                    context, 'Failed to update: $e');
+                                  context,
+                                  'Failed to update: $e',
+                                );
                               }
                             }
                           },

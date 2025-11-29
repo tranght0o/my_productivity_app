@@ -33,7 +33,8 @@ class _BottomNavState extends State<BottomNav> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          // removed radius
+          // borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -42,43 +43,40 @@ class _BottomNavState extends State<BottomNav> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: Colors.deepPurple,
-            unselectedItemColor: Colors.grey.shade500,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.w400,
-              fontSize: 12,
-            ),
-
-            /// Navigation items
-            items: [
-              _buildNavItem(Icons.home_outlined, Icons.home_rounded, 'Home', 0),
-              _buildNavItem(
-                Icons.photo_library_outlined,
-                Icons.photo_library_rounded,
-                'Library',
-                1,
-              ),
-              _buildNavItem(
-                Icons.insights_outlined,
-                Icons.insights_rounded,
-                'Insight',
-                2,
-              ),
-              _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
-            ],
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.deepPurple,
+          unselectedItemColor: Colors.grey.shade500,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
           ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w400,
+            fontSize: 12,
+          ),
+
+          /// Navigation items
+          items: [
+            _buildNavItem(Icons.home_outlined, Icons.home_rounded, 'Home', 0),
+            _buildNavItem(
+              Icons.photo_library_outlined,
+              Icons.photo_library_rounded,
+              'Library',
+              1,
+            ),
+            _buildNavItem(
+              Icons.insights_outlined,
+              Icons.insights_rounded,
+              'Insight',
+              2,
+            ),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
+          ],
         ),
       ),
     );
@@ -91,44 +89,9 @@ class _BottomNavState extends State<BottomNav> {
     String label,
     int index,
   ) {
-    final bool isActive = _currentIndex == index;
-
     return BottomNavigationBarItem(
-      icon: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 24),
-          const SizedBox(height: 4),
-
-          /// Dot indicator under icon (inactive = invisible)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isActive ? Colors.deepPurple : Colors.transparent,
-            ),
-          ),
-        ],
-      ),
-      activeIcon: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(activeIcon, size: 26, color: Colors.deepPurple),
-          const SizedBox(height: 4),
-
-          /// Active indicator dot
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.deepPurple,
-            ),
-          ),
-        ],
-      ),
+      icon: Icon(icon, size: 24),
+      activeIcon: Icon(activeIcon, size: 26, color: Colors.deepPurple),
       label: label,
     );
   }

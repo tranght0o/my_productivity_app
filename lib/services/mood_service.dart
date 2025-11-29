@@ -86,7 +86,7 @@ class MoodService {
     }
   }
 
-  // IMPROVED: Limit data fetch for insights (not all time)
+  // Limit data fetch for insights (not all time)
   Future<List<Mood>> getMoodsBetween(DateTime start, DateTime end) async {
     try {
       final snapshot = await _firestore
@@ -120,4 +120,26 @@ class MoodService {
       throw Exception('Failed to fetch all moods: $e');
     }
   }
+  /// Stream moods by month (real-time updates)
+  Stream<List<Mood>> getMoodsByMonthStream(int year, int month) {
+    try {
+      final startOfMonth = DateTime(year, month, 1);
+      final endOfMonth = DateTime(year, month + 1, 0);
+
+      return _firestore
+          .collection('moods')
+          .where('userId', isEqualTo: _user!.uid)
+          .where('date', isGreaterThanOrEqualTo: startOfMonth)
+          .where('date', isLessThanOrEqualTo: endOfMonth)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => Mood.fromMap(doc.data(), doc.id))
+                .toList();
+          });
+    } catch (e) {
+      throw Exception('Failed to stream moods by month: $e');
+    }
+  }
+
 }

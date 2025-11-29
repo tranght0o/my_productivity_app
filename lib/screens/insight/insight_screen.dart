@@ -86,7 +86,8 @@ class _InsightScreenState extends State<InsightScreen> {
       appBar: AppBar(
         title: const Text("Insights"),
       ),
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF5F6FA),
+
       body: Column(
         children: [
           // Week Selector Header

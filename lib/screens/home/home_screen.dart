@@ -17,7 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
 
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  // Default open as WEEK mode
+  CalendarFormat _calendarFormat = CalendarFormat.week;
 
   void _showAddOptions() {
     showModalBottomSheet(
@@ -58,15 +59,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Move to previous based on mode
   void _previousMonth() {
     setState(() {
-      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
+      if (_calendarFormat == CalendarFormat.week) {
+        _focusedDay = _focusedDay.subtract(const Duration(days: 7));
+      } else {
+        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
+      }
     });
   }
 
+  // Move to next based on mode
   void _nextMonth() {
     setState(() {
-      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
+      if (_calendarFormat == CalendarFormat.week) {
+        _focusedDay = _focusedDay.add(const Duration(days: 7));
+      } else {
+        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
+      }
     });
   }
 
@@ -79,35 +90,63 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String greeting() {
+      final hour = DateTime.now().hour;
+      if (hour < 12) return "Good Morning";
+      if (hour < 17) return "Good Afternoon";
+      return "Good Evening";
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Schedule'),
         elevation: 0,
-        backgroundColor: Colors.grey[50],
-        foregroundColor: Colors.black,
+        backgroundColor: const Color(0xFFF5F6FA),
+        automaticallyImplyLeading: false,
+        toolbarHeight: 72,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting(),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              "Take a moment to plan your day",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
-      backgroundColor: Colors.grey[50],
+
+      backgroundColor: const Color(0xFFF5F6FA),
       body: Column(
         children: [
           // Calendar card
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade200, width: 1),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Stack(
               children: [
-                // Centered Month/Year with arrows
                 Align(
                   alignment: Alignment.topCenter,
                   child: Row(
@@ -122,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         "${_focusedDay.month}/${_focusedDay.year}",
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: 17,
                           color: Colors.deepPurple.shade400,
                         ),
                       ),
@@ -135,7 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Top-right toggle button
                 Positioned(
                   top: 0,
                   right: 0,
@@ -151,9 +189,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Calendar widget
                 Padding(
-                  padding: const EdgeInsets.only(top: 55),
+                  padding: const EdgeInsets.only(top: 60),
                   child: TableCalendar(
                     focusedDay: _focusedDay,
                     firstDay: DateTime(2000),
@@ -178,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                       ),
                       selectedDecoration: BoxDecoration(
-                        color: Colors.deepPurple.shade300,
+                        color: Colors.deepPurple.shade400,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -190,9 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Main sections
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -209,9 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddOptions,
         backgroundColor: Colors.deepPurple.shade400,
+        elevation: 3,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

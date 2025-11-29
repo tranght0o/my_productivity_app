@@ -41,7 +41,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Library')),
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F6FA),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

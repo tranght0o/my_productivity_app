@@ -13,7 +13,6 @@ class MoodSection extends StatefulWidget {
 class _MoodSectionState extends State<MoodSection> {
   final _moodService = MoodService();
 
-  //mood options and values
   final List<Map<String, dynamic>> _moodOptions = [
     {'emoji': '😢', 'value': 1, 'label': 'Terrible'},
     {'emoji': '😞', 'value': 2, 'label': 'Bad'},
@@ -24,12 +23,11 @@ class _MoodSectionState extends State<MoodSection> {
 
   int? _tempSelected;
 
-  /// Save the mood to Firestore and update local state for instant UI feedback
   Future<void> _saveMood(int value) async {
     setState(() {
       _tempSelected = value;
     });
-    
+
     try {
       await _moodService.addOrUpdateMood(widget.selectedDay, value);
     } catch (e) {
@@ -52,21 +50,20 @@ class _MoodSectionState extends State<MoodSection> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey[50],
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      color: const Color(0xFFF5F6FA),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey.shade200, width: 1),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -74,7 +71,8 @@ class _MoodSectionState extends State<MoodSection> {
             stream: _moodService.getMoodForDay(widget.selectedDay),
             builder: (context, snapshot) {
               final currentMood = snapshot.data;
-              final currentValue = currentMood?.moodValue ?? _tempSelected;
+              final currentValue =
+                  currentMood?.moodValue ?? _tempSelected;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +84,8 @@ class _MoodSectionState extends State<MoodSection> {
                       children: [
                         const Text(
                           'How are you feeling?',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w700),
                         ),
                         if (currentValue != null)
                           Text(
@@ -104,15 +103,18 @@ class _MoodSectionState extends State<MoodSection> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: _moodOptions.map((m) {
-                      final bool selected = currentValue == m['value'];
+                      final bool selected =
+                          currentValue == m['value'];
                       return GestureDetector(
                         onTap: () => _saveMood(m['value']),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                          duration:
+                              const Duration(milliseconds: 150),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: selected
-                                ? Colors.deepPurple.withOpacity(0.12)
+                                ? Colors.deepPurple
+                                    .withOpacity(0.12)
                                 : Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
@@ -123,8 +125,10 @@ class _MoodSectionState extends State<MoodSection> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: selected ? 10 : 4,
+                                color: Colors.black
+                                    .withOpacity(0.05),
+                                blurRadius:
+                                    selected ? 10 : 4,
                                 offset: const Offset(0, 3),
                               ),
                             ],

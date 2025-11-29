@@ -68,30 +68,6 @@ class TodoService {
     }
   }
 
-  // ADDED: Query todos by specific month (for Library screen performance)
-  Future<List<Todo>> getTodosByMonth(int year, int month) async {
-    if (uid == null) return [];
-    
-    try {
-      final startOfMonth = DateTime(year, month, 1);
-      final endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
-
-      final snapshot = await _firestore
-          .collection('todos')
-          .where('uid', isEqualTo: uid)
-          .where('date', isGreaterThanOrEqualTo: startOfMonth)
-          .where('date', isLessThanOrEqualTo: endOfMonth)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => Todo.fromMap(doc.id, doc.data()))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch todos by month: $e');
-    }
-  }
-
-  // IMPROVED: Limit data fetch for insights (not all time)
   Future<List<Todo>> getTodosBetween(DateTime start, DateTime end) async {
     if (uid == null) return [];
     
@@ -127,4 +103,24 @@ class TodoService {
       throw Exception('Failed to fetch all todos: $e');
     }
   }
+
+  Stream<List<Todo>> getTodosByMonthStream(int year, int month) {
+  if (uid == null) return const Stream.empty();
+
+  final startOfMonth = DateTime(year, month, 1);
+  final endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+
+  return _firestore
+      .collection('todos')
+      .where('uid', isEqualTo: uid)
+      .where('date', isGreaterThanOrEqualTo: startOfMonth)
+      .where('date', isLessThanOrEqualTo: endOfMonth)
+      .snapshots()
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => Todo.fromMap(doc.id, doc.data()))
+            .toList(),
+      );
+}
+
 }
