@@ -119,8 +119,19 @@ class _HabitChartState extends State<HabitChart> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Card(
+      return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
         child: Container(
           height: 280,
           alignment: Alignment.center,
@@ -135,10 +146,19 @@ class _HabitChartState extends State<HabitChart> {
     // Check if there's any completed habits
     final hasData = grouped.values.any((count) => count > 0);
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -149,7 +169,7 @@ class _HabitChartState extends State<HabitChart> {
               "Habits Completed",
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
@@ -160,18 +180,12 @@ class _HabitChartState extends State<HabitChart> {
                 ? Container(
                     height: 220,
                     alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.repeat, 
-                            size: 48, 
-                            color: Colors.grey.shade300),
-                        const SizedBox(height: 8),
-                        Text(
-                          "No completed habits this week",
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ],
+                    child: Text(
+                      "No completed habits this week",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                     ),
                   )
                 : SizedBox(
@@ -228,6 +242,7 @@ class _HabitChartState extends State<HabitChart> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -239,7 +254,8 @@ class _HabitChartState extends State<HabitChart> {
                             sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
-                        // Bar groups (one for each day)
+
+                        // Bar groups (one per day)
                         barGroups: List.generate(7, (index) {
                           final date = monday.add(Duration(days: index));
                           final dateKey = _formatDate(date);
@@ -250,34 +266,29 @@ class _HabitChartState extends State<HabitChart> {
                             barRods: [
                               BarChartRodData(
                                 toY: count.toDouble(),
-                                width: 18,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(6),
-                                  topRight: Radius.circular(6),
-                                ),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFCE93D8), // Light purple/pink
-                                    Color(0xFF7B1FA2), // Deep purple
-                                  ],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
+                                width: 14,
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.deepPurple.shade400
+                                    .withOpacity(count == 0 ? 0.18 : 0.9),
                               ),
                             ],
                           );
                         }),
+
                         // Touch interaction
                         barTouchData: BarTouchData(
                           touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (_) => Colors.purple,
+                            getTooltipColor: (_) => Colors.white,
+                            tooltipPadding: const EdgeInsets.all(10),
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              final date = monday.add(Duration(days: groupIndex));
+                              final date =
+                                  monday.add(Duration(days: groupIndex));
                               return BarTooltipItem(
                                 '${rod.toY.toInt()} habits\n${_getDayLabel(date)}',
-                                const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                TextStyle(
+                                  color: Colors.deepPurple.shade400,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
                                 ),
                               );
                             },

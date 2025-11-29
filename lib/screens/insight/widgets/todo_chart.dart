@@ -106,8 +106,19 @@ class _TodoChartState extends State<TodoChart> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Card(
+      return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
         child: Container(
           height: 280,
           alignment: Alignment.center,
@@ -122,10 +133,19 @@ class _TodoChartState extends State<TodoChart> {
     // Check if there's any completed todos
     final hasData = grouped.values.any((count) => count > 0);
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -136,7 +156,7 @@ class _TodoChartState extends State<TodoChart> {
               "To-Do Completed",
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: Colors.black87,
               ),
             ),
@@ -147,18 +167,12 @@ class _TodoChartState extends State<TodoChart> {
                 ? Container(
                     height: 220,
                     alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.task_alt, 
-                            size: 48, 
-                            color: Colors.grey.shade300),
-                        const SizedBox(height: 8),
-                        Text(
-                          "No completed tasks this week",
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ],
+                    child: Text(
+                      "No completed tasks this week",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                     ),
                   )
                 : SizedBox(
@@ -204,7 +218,8 @@ class _TodoChartState extends State<TodoChart> {
                               },
                             ),
                           ),
-                          // Left titles (count)
+
+                          // Left titles (counts)
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -215,10 +230,12 @@ class _TodoChartState extends State<TodoChart> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                           ),
+
                           topTitles: AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
@@ -226,7 +243,8 @@ class _TodoChartState extends State<TodoChart> {
                             sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
-                        // Bar groups (one for each day)
+
+                        // Bars (one per day)
                         barGroups: List.generate(7, (index) {
                           final date = monday.add(Duration(days: index));
                           final dateKey = _formatDate(date);
@@ -237,34 +255,29 @@ class _TodoChartState extends State<TodoChart> {
                             barRods: [
                               BarChartRodData(
                                 toY: count.toDouble(),
-                                width: 20,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(6),
-                                  topRight: Radius.circular(6),
-                                ),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFD1C4E9), // Light purple
-                                    Color(0xFF7E57C2), // Deep purple
-                                  ],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
+                                width: 14,
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.deepPurple.shade400
+                                    .withOpacity(count == 0 ? 0.18 : 0.9),
                               ),
                             ],
                           );
                         }),
+
                         // Touch interaction
                         barTouchData: BarTouchData(
                           touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (_) => Colors.deepPurple,
+                            getTooltipColor: (_) => Colors.white,
+                            tooltipPadding: const EdgeInsets.all(10),
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              final date = monday.add(Duration(days: groupIndex));
+                              final date =
+                                  monday.add(Duration(days: groupIndex));
                               return BarTooltipItem(
                                 '${rod.toY.toInt()} tasks\n${_getDayLabel(date)}',
-                                const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                TextStyle(
+                                  color: Colors.deepPurple.shade400,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
                                 ),
                               );
                             },

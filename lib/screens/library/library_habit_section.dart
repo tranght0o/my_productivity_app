@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:month_picker_dialog/month_picker_dialog.dart';
-import 'package:table_calendar/table_calendar.dart';
 import '../../models/habit_model.dart';
-import '../../models/habit_log_model.dart';
 import '../../services/habit_service.dart';
-import '../../services/habit_log_service.dart';
-import '../../utils/habit_utils.dart';
+import '../../widgets/add_habit_bottom_sheet.dart';
+import '../../utils/message_helper.dart';
+import 'habit_detail_screen.dart';
 
 class LibraryHabitSection extends StatefulWidget {
   final String searchQuery;
@@ -17,54 +15,10 @@ class LibraryHabitSection extends StatefulWidget {
 
 class _LibraryHabitSectionState extends State<LibraryHabitSection> {
   final _habitService = HabitService();
-  final _habitLogService = HabitLogService();
+  
+  String _filterStatus = 'all'; // all, active, completed
+  String _sortBy = 'newest'; // newest, oldest, name
 
-  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
-  Map<String, List<HabitLog>> _logs = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchAllLogs();
-  }
-
-  /// Fetch logs for selected month
-  Future<void> _fetchAllLogs() async {
-    try {
-      final logs = await _habitLogService.getLogsByMonth(
-        _selectedMonth.year,
-        _selectedMonth.month,
-      );
-
-      setState(() {
-        _logs = {};
-        for (var log in logs) {
-          _logs.putIfAbsent(log.habitId, () => []).add(log);
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load habit logs: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _pickMonth() async {
-    final picked = await showMonthPicker(
-      context: context,
-      initialDate: _selectedMonth,
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedMonth = DateTime(picked.year, picked.month);
-      });
-      _fetchAllLogs();
-    }
-  }
-
-  /// Format frequency text for display
   String _getFrequencyText(Habit habit) {
     switch (habit.frequency) {
       case 'daily':
@@ -78,302 +32,323 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
     }
   }
 
+  void _showEditSheet(Habit habit) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => AddHabitBottomSheet(habitToEdit: habit),
+    );
+  }
+
+  Future<void> _confirmDelete(Habit habit) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Habit'),
+        content: Text('Are you sure you want to delete "${habit.name}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _habitService.deleteHabit(habit.id);
+        if (mounted) {
+          MessageHelper.showSuccess(context, 'Habit deleted successfully!');
+        }
+      } catch (e) {
+        if (mounted) {
+          MessageHelper.showError(context, 'Failed to delete: $e');
+        }
+      }
+    }
+  }
+
+  void _showOptionsMenu(Habit habit) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit, color: Colors.deepPurple),
+            title: const Text('Edit Habit'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _showEditSheet(habit);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: const Text('Delete Habit'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _confirmDelete(habit);
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  List<Habit> _filterAndSortHabits(List<Habit> habits) {
+    final now = DateTime.now();
+    
+    // Filter by status
+    List<Habit> filtered = habits.where((habit) {
+      if (_filterStatus == 'active') {
+        return habit.endDate == null || habit.endDate!.isAfter(now);
+      } else if (_filterStatus == 'completed') {
+        return habit.endDate != null && habit.endDate!.isBefore(now);
+      }
+      return true; // 'all'
+    }).toList();
+
+    // Sort
+    if (_sortBy == 'newest') {
+      filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    } else if (_sortBy == 'oldest') {
+      filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    } else if (_sortBy == 'name') {
+      filtered.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    }
+
+    return filtered;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Habit>>(
-      stream: _habitService.getHabits(),
-      builder: (context, snapshot) {
-        final habits = snapshot.data ?? [];
+    final purple = Colors.deepPurple.shade400;
 
-        final filteredHabits = widget.searchQuery.isEmpty
-            ? habits
-            : habits
-                .where((h) => h.name
-                    .toLowerCase()
-                    .contains(widget.searchQuery.toLowerCase()))
-                .toList();
+    return Column(
+      children: [
 
-        if (filteredHabits.isEmpty) {
-          return const Center(
-            child: Text(
-              'No habits found',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          );
-        }
+        // 🌟 Modern filter & sort bar (NEW UI)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Filter Segmented Chips
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildChip("All", "all", purple),
+                    const SizedBox(width: 6),
+                    _buildChip("Active", "active", purple),
+                    const SizedBox(width: 6),
+                    _buildChip("Completed", "completed", purple),
+                  ],
+                ),
+              ),
 
-        return Column(
-          children: [
-            // Month picker header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: _pickMonth,
-                    icon: const Icon(Icons.calendar_today,
-                        color: Colors.deepPurple),
-                    label: Text(
-                      '${_selectedMonth.month}/${_selectedMonth.year}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.deepPurple,
+              const SizedBox(width: 12),
+
+              // Sort Button
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    if (_sortBy == 'newest') {
+                      _sortBy = 'oldest';
+                    } else {
+                      _sortBy = 'newest';
+                    }
+                  });
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _sortBy == 'newest'
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        size: 18,
+                        color: purple,
                       ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Sort",
+                        style: TextStyle(
+                          color: purple,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // ------------------------------------------------------------
+
+        // Habits list
+        Expanded(
+          child: StreamBuilder<List<Habit>>(
+            stream: _habitService.getHabits(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final habits = snapshot.data ?? [];
+              
+              // Apply search filter
+              final searchFiltered = widget.searchQuery.isEmpty
+                  ? habits
+                  : habits.where((h) => h.name
+                      .toLowerCase()
+                      .contains(widget.searchQuery.toLowerCase()))
+                      .toList();
+
+              // Apply filter and sort
+              final filteredHabits = _filterAndSortHabits(searchFiltered);
+
+              if (filteredHabits.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No habits found',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                itemCount: filteredHabits.length,
+                itemBuilder: (context, index) {
+                  final habit = filteredHabits[index];
+                  return _buildHabitCard(habit);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Modern Chip Builder
+  Widget _buildChip(String label, String value, Color purple) {
+    final bool selected = _filterStatus == value;
+
+    return GestureDetector(
+      onTap: () => setState(() => _filterStatus = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? purple.withOpacity(0.15) : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? purple : Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 13.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Habit Card (unchanged)
+  Widget _buildHabitCard(Habit habit) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => HabitDetailScreen(habit: habit),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Habit icon
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.fitness_center,
+                color: Colors.deepPurple,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Habit info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
-                  IconButton(
-                    onPressed: _fetchAllLogs,
-                    icon: const Icon(Icons.refresh, color: Colors.deepPurple),
-                  )
+                  const SizedBox(height: 4),
+                  Text(
+                    _getFrequencyText(habit),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // Habits list
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredHabits.length,
-                itemBuilder: (context, index) {
-                  final habit = filteredHabits[index];
-                  final logs = _logs[habit.id] ?? [];
-                  return _buildHabitCalendar(habit, logs);
-                },
-              ),
+            // Options menu button
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onPressed: () => _showOptionsMenu(habit),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildHabitCalendar(Habit habit, List<HabitLog> logs) {
-    final streak = _calculateStreak(logs);
-    final completion = _calculateCompletion(habit, logs);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with habit name and frequency
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  habit.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  _getFrequencyText(habit),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _selectedMonth,
-            currentDay: DateTime.now(),
-            availableGestures: AvailableGestures.none,
-            headerVisible: false,
-            daysOfWeekVisible: true,
-            calendarStyle: const CalendarStyle(outsideDaysVisible: false),
-            calendarBuilders: CalendarBuilders(
-              defaultBuilder: (context, day, focusedDay) {
-                return _buildDayCell(day, habit, logs);
-              },
-              // Handle today's date with same style as other days
-              todayBuilder: (context, day, focusedDay) {
-                return _buildDayCell(day, habit, logs);
-              },
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Padding(
-            padding:
-                const EdgeInsets.only(left: 8, right: 8, bottom: 10, top: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '🔥 Streak: $streak days',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-                Text(
-                  '✅ ${completion.toStringAsFixed(0)}% done',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build individual day cell for calendar
-  Widget _buildDayCell(DateTime day, Habit habit, List<HabitLog> logs) {
-    final isValid = HabitUtils.isHabitActiveOnDay(habit, day);
-    final log = logs.firstWhere(
-      (l) => l.dayKey == "${day.year}-${day.month}-${day.day}",
-      orElse: () => HabitLog(
-        id: '',
-        habitId: habit.id,
-        userId: habit.userId,
-        dayKey: '',
-        done: false,
-      ),
-    );
-
-    final bgColor = !isValid
-        ? Colors.grey.withOpacity(0.05)
-        : (log.done
-            ? Colors.deepPurple.withOpacity(0.7)
-            : Colors.deepPurple.withOpacity(0.1));
-
-    final textColor = isValid ? Colors.black : Colors.grey.withOpacity(0.4);
-
-    return GestureDetector(
-      onTap: isValid
-          ? () async {
-              try {
-                await _habitLogService.toggleHabit(
-                  habit.id,
-                  day,
-                  log.done,
-                );
-                _fetchAllLogs();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to update: $e')),
-                  );
-                }
-              }
-            }
-          : null,
-      child: Container(
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          '${day.day}',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: log.done ? FontWeight.bold : FontWeight.normal,
-          ),
         ),
       ),
     );
-  }
-
-  /// Calculate consecutive streak from most recent completed day
-  int _calculateStreak(List<HabitLog> logs) {
-    if (logs.isEmpty) return 0;
-
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-
-    final completedLogs = logs.where((log) => log.done).toList();
-    if (completedLogs.isEmpty) return 0;
-
-    final completedDates = completedLogs.map((log) {
-      final parts = log.dayKey.split('-');
-      return DateTime(
-        int.parse(parts[0]),
-        int.parse(parts[1]),
-        int.parse(parts[2]),
-      );
-    }).toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    int streak = 0;
-    DateTime? expectedDate;
-
-    for (var date in completedDates) {
-      if (date.isAfter(normalizedToday)) continue;
-
-      if (expectedDate == null) {
-        final daysSinceToday = normalizedToday.difference(date).inDays;
-        if (daysSinceToday <= 1) {
-          streak = 1;
-          expectedDate = date.subtract(const Duration(days: 1));
-        } else {
-          break;
-        }
-      } else {
-        if (date.year == expectedDate.year &&
-            date.month == expectedDate.month &&
-            date.day == expectedDate.day) {
-          streak++;
-          expectedDate = date.subtract(const Duration(days: 1));
-        } else {
-          break;
-        }
-      }
-    }
-
-    return streak;
-  }
-
-  /// Calculate completion percentage for this month
-  double _calculateCompletion(Habit habit, List<HabitLog> logs) {
-    final daysInMonth =
-        DateUtils.getDaysInMonth(_selectedMonth.year, _selectedMonth.month);
-    int totalDays = 0;
-    int doneDays = 0;
-
-    for (int d = 1; d <= daysInMonth; d++) {
-      final date = DateTime(_selectedMonth.year, _selectedMonth.month, d);
-      if (!HabitUtils.isHabitActiveOnDay(habit, date)) continue;
-
-      totalDays++;
-      final match = logs.any(
-        (l) =>
-            l.dayKey == "${date.year}-${date.month}-${date.day}" && l.done,
-      );
-      if (match) doneDays++;
-    }
-
-    if (totalDays == 0) return 0;
-    return (doneDays / totalDays) * 100;
   }
 }

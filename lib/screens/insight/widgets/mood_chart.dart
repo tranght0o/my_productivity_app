@@ -86,11 +86,12 @@ class _MoodChartState extends State<MoodChart> {
 
     for (int i = 0; i < 7; i++) {
       final date = monday.add(Duration(days: i));
-      
+
       final mood = _moods.firstWhere(
-        (m) => m.date.year == date.year && 
-               m.date.month == date.month && 
-               m.date.day == date.day,
+        (m) =>
+            m.date.year == date.year &&
+            m.date.month == date.month &&
+            m.date.day == date.day,
         orElse: () => Mood(
           id: '',
           userId: '',
@@ -115,8 +116,19 @@ class _MoodChartState extends State<MoodChart> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Card(
+      return Container(
         margin: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Container(
           height: 280,
           alignment: Alignment.center,
@@ -128,10 +140,19 @@ class _MoodChartState extends State<MoodChart> {
     final spots = _createSpots();
     final hasData = spots.isNotEmpty;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.all(8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -141,7 +162,8 @@ class _MoodChartState extends State<MoodChart> {
               "Mood Chart",
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 16),
@@ -150,53 +172,48 @@ class _MoodChartState extends State<MoodChart> {
                 ? Container(
                     height: 220,
                     alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.mood, 
-                            size: 48, 
-                            color: Colors.grey.shade300),
-                        const SizedBox(height: 8),
-                        Text(
-                          "No mood data this week",
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ],
+                    child: Text(
+                      "No mood data this week",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
                     ),
                   )
                 : SizedBox(
                     height: 220,
                     child: LineChart(
                       LineChartData(
-                        minY: 1,
-                        maxY: 5,
-                        gridData: FlGridData(show: false),
-                        borderData: FlBorderData(show: false),
+                        minX: 0,
+                        maxX: 6,
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              reservedSize: 22,
+                              interval: 1, 
+                              reservedSize: 28,
                               getTitlesWidget: (value, meta) {
-                                final index = value.toInt();
-                                if (index < 0 || index >= 7) {
+                                int index = value.toInt();
+                                if (index < 0 || index > 6) {
                                   return const SizedBox();
                                 }
                                 return Text(
                                   _getDayLabel(index),
                                   style: const TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 );
                               },
                             ),
                           ),
+
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               interval: 1,
-                              reservedSize: 28,
+                              reservedSize: 32,
                               getTitlesWidget: (value, meta) {
                                 if (value < 1 || value > 5 || value != value.roundToDouble()) {
                                   return const SizedBox();
@@ -208,6 +225,7 @@ class _MoodChartState extends State<MoodChart> {
                               },
                             ),
                           ),
+
                           topTitles: AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
@@ -215,12 +233,18 @@ class _MoodChartState extends State<MoodChart> {
                             sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
+
+                        minY: 1,
+                        maxY: 5,
+                        gridData: FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+
                         lineBarsData: [
                           LineChartBarData(
                             isCurved: true,
-                            curveSmoothness: 0.3,
+                            curveSmoothness: 0.25,
                             barWidth: 3,
-                            color: const Color(0xFF7E57C2),
+                            color: Colors.deepPurple.shade400,
                             dotData: FlDotData(
                               show: true,
                               getDotPainter: (spot, percent, barData, index) {
@@ -228,38 +252,34 @@ class _MoodChartState extends State<MoodChart> {
                                   radius: 4,
                                   color: Colors.white,
                                   strokeWidth: 2,
-                                  strokeColor: const Color(0xFF7E57C2),
+                                  strokeColor: Colors.deepPurple.shade400,
                                 );
                               },
                             ),
                             belowBarData: BarAreaData(
                               show: true,
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF7E57C2).withOpacity(0.3),
-                                  Colors.transparent,
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
+                              color: Colors.deepPurple.shade400.withOpacity(0.12),
                             ),
                             spots: spots,
                           ),
                         ],
+
                         lineTouchData: LineTouchData(
                           touchTooltipData: LineTouchTooltipData(
-                            getTooltipColor: (_) => Colors.deepPurple,
+                            getTooltipColor: (_) => Colors.white,
+                            tooltipPadding: const EdgeInsets.all(10),
                             getTooltipItems: (touchedSpots) {
                               return touchedSpots.map((spot) {
                                 final dayIndex = spot.x.toInt();
                                 final moodValue = spot.y.toInt();
                                 final emoji = _emojiForValue(moodValue);
-                                
+
                                 return LineTooltipItem(
                                   '$emoji ${_getDayLabel(dayIndex)}',
-                                  const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                  TextStyle(
+                                    color: Colors.deepPurple.shade400,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
                                   ),
                                 );
                               }).toList();
