@@ -82,7 +82,7 @@ class _BottomNavState extends State<BottomNav> {
     );
   }
 
-  /// Builds each navigation bar item with animated dot indicator
+  /// Builds each navigation bar
   BottomNavigationBarItem _buildNavItem(
     IconData icon,
     IconData activeIcon,

@@ -87,8 +87,7 @@ class TodoService {
     }
   }
 
-  // DEPRECATED: Use getTodosByMonth or getTodosBetween instead
-  @Deprecated('Use getTodosByMonth() for better performance')
+
   Future<List<Todo>> getAllTodosOnce() async {
     if (uid == null) return [];
     try {

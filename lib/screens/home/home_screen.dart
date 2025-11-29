@@ -108,20 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               greeting(),
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              "Take a moment to plan your day",
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
-              ),
+                style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w500,
+                  color: Color.fromARGB(221, 28, 28, 28),
+                ),
             ),
           ],
         ),

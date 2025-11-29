@@ -29,6 +29,9 @@ class AuthService {
       // Update display name (user's name)
       await cred.user?.updateDisplayName(name);
 
+      // Send email verification
+      await cred.user?.sendEmailVerification();
+
       // Create AppUser object
       final newUser = AppUser(
         uid: cred.user!.uid,
@@ -61,7 +64,17 @@ class AuthService {
     required String password,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Check if email is verified
+      if (cred.user != null && !cred.user!.emailVerified) {
+        await _auth.signOut(); // Sign out unverified user
+        return 'Please verify your email before signing in';
+      }
+
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
@@ -78,6 +91,41 @@ class AuthService {
       throw Exception(_mapError(e.code));
     } catch (_) {
       throw Exception('Unexpected error sending password reset email');
+    }
+  }
+
+  // Resend verification email
+  Future<String?> resendVerificationEmail() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return 'No user found';
+      }
+
+      if (user.emailVerified) {
+        return 'Email already verified';
+      }
+
+      await user.sendEmailVerification();
+      return null; // success
+    } on FirebaseAuthException catch (e) {
+      return _mapError(e.code);
+    } catch (_) {
+      return 'Unexpected error sending verification email';
+    }
+  }
+
+  // Reload user and check verification status
+  Future<bool> reloadAndCheckVerification() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      await user.reload();
+      final updatedUser = _auth.currentUser;
+      return updatedUser?.emailVerified ?? false;
+    } catch (_) {
+      return false;
     }
   }
 

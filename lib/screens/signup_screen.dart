@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import '../navigation/bottom_nav.dart';
 import 'login_screen.dart';
+import 'email_verification_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -64,10 +64,12 @@ class _SignupScreenState extends State<SignupScreen> {
     if (error != null) {
       setState(() => _errorMessage = error);
     } else {
-      // Navigate to home screen after successful signup
+      // Navigate to email verification screen
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const BottomNav()),
+        MaterialPageRoute(
+          builder: (_) => EmailVerificationScreen(email: _email),
+        ),
       );
     }
   }

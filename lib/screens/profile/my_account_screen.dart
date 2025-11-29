@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth_service.dart';
+import '../../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../auth_wrapper.dart';
+import '../../screens/auth_wrapper.dart';
 
 class MyAccountScreen extends StatefulWidget {
   const MyAccountScreen({super.key});
@@ -133,7 +133,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Account'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
       backgroundColor: Colors.grey[50],
       body: Padding(

@@ -26,18 +26,14 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
   bool _loading = false;
 
   final List<String> _daysOfWeek = [
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-    'Sun'
+    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
   ];
 
   @override
   void initState() {
     super.initState();
+
+    // load existing habit data
     _nameController = TextEditingController(text: widget.habitToEdit?.name ?? '');
 
     if (widget.habitToEdit != null) {
@@ -56,7 +52,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     super.dispose();
   }
 
-  /// Pick a date using Flutter's date picker
+  // pick start or end date
   Future<void> _pickDate({required bool isStart}) async {
     final now = DateTime.now();
     final initialDate = isStart ? (_startDate ?? now) : (_endDate ?? now);
@@ -66,6 +62,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
+
     if (picked != null) {
       setState(() {
         if (isStart) {
@@ -77,12 +74,8 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     }
   }
 
-  /// Validate form before saving
-  String? _validate() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      return 'Please enter a habit name';
-    }
+  // validate name and dates
+  String? _validateExtra() {
     if (_startDate == null) {
       return 'Please select a start date';
     }
@@ -95,11 +88,15 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     return null;
   }
 
-  /// Save or update the habit
+  // save habit to firestore
   Future<void> _save() async {
-    final error = _validate();
-    if (error != null) {
-      MessageHelper.showWarning(context, error);
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final extraError = _validateExtra();
+    if (extraError != null) {
+      MessageHelper.showWarning(context, extraError);
       return;
     }
 
@@ -107,7 +104,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
 
     try {
       final name = _nameController.text.trim();
-      
+
       if (widget.habitToEdit != null) {
         await _habitService.updateHabit(
           id: widget.habitToEdit!.id,
@@ -118,6 +115,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
           daysOfWeek: _frequency == 'weekly' ? _selectedDaysOfWeek : [],
           daysOfMonth: _frequency == 'monthly' ? _selectedDaysOfMonth : [],
         );
+
         if (mounted) {
           Navigator.pop(context);
           MessageHelper.showSuccess(context, 'Habit updated successfully!');
@@ -131,6 +129,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
           daysOfWeek: _frequency == 'weekly' ? _selectedDaysOfWeek : [],
           daysOfMonth: _frequency == 'monthly' ? _selectedDaysOfMonth : [],
         );
+
         if (mounted) {
           Navigator.pop(context);
           MessageHelper.showSuccess(context, 'Habit created successfully!');
@@ -184,6 +183,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
+                // validate name and dates
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
@@ -194,6 +194,12 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                     prefixIcon: const Icon(Icons.fitness_center),
                   ),
                   textCapitalization: TextCapitalization.sentences,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a habit name';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
 
@@ -240,6 +246,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
+                // frequency dropdown
                 DropdownButtonFormField<String>(
                   value: _frequency,
                   decoration: InputDecoration(
@@ -260,6 +267,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                 ),
                 const SizedBox(height: 12),
 
+                // weekly selection chips
                 if (_frequency == 'weekly') ...[
                   const Align(
                     alignment: Alignment.centerLeft,
@@ -294,6 +302,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                   const SizedBox(height: 8),
                 ],
 
+                // monthly selection chips
                 if (_frequency == 'monthly') ...[
                   const Align(
                     alignment: Alignment.centerLeft,
@@ -332,6 +341,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
 
                 const SizedBox(height: 16),
 
+                // save button UI
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -352,8 +362,10 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
                               color: Colors.white,
                             ),
                           )
-                        : Text(isEdit ? 'Update' : 'Save',
-                            style: const TextStyle(color: Colors.white)),
+                        : Text(
+                            isEdit ? 'Update' : 'Save',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),

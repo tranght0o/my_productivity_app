@@ -125,7 +125,7 @@ class _InsightScreenState extends State<InsightScreen> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Color.fromARGB(221, 34, 34, 34),
                         ),
                         textAlign: TextAlign.center,
                       ),

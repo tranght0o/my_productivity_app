@@ -104,8 +104,7 @@ class MoodService {
     }
   }
 
-  // DEPRECATED: Use getMoodsByMonth or getMoodsBetween instead
-  @Deprecated('Use getMoodsByMonth() for better performance')
+  //Use getMoodsByMonth or getMoodsBetween instead
   Future<List<Mood>> getAllMoodsOnce() async {
     try {
       final snapshot = await _firestore

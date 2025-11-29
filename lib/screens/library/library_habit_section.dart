@@ -159,34 +159,24 @@ class _LibraryHabitSectionState extends State<LibraryHabitSection> {
 
               const SizedBox(width: 12),
 
-              // SORT ICON 
-              InkWell(
-                onTap: () {
+              // SORT ICON ONLY
+              IconButton(
+                icon: Icon(
+                  _sortBy == 'newest'
+                      ? Icons.arrow_downward
+                      : Icons.arrow_upward,
+                  size: 20,
+                  color: purple,
+                ),
+                onPressed: () {
                   setState(() {
                     _sortBy = _sortBy == 'newest' ? 'oldest' : 'newest';
                   });
                 },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _sortBy == 'newest'
-                        ? Icons.arrow_downward
-                        : Icons.arrow_upward,
-                    size: 18,
-                    color: purple,
-                  ),
-                ),
               ),
             ],
           ),
         ),
-
-
 
         Expanded(
           child: StreamBuilder<List<Habit>>(
