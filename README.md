@@ -1,16 +1,18 @@
-# my_productivity_app
+# DayFlow
 
-A new Flutter project.
+A comprehensive productivity app for task management, habit tracking, and mood monitoring built with Flutter and Firebase.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Task Management** - Create and organize daily tasks with calendar view
+- **Habit Tracking** - Build habits with daily/weekly/monthly schedules and streak tracking
+- **Mood Journaling** - Track emotional wellbeing with emoji-based logging
+- **Analytics** - Interactive charts showing completion rates and trends
+- **Secure Auth** - Email verification and account management
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Flutter** - Cross-platform framework
+- **Firebase** - Authentication & Firestore database
+- **fl_chart** - Data visualization
+- **table_calendar** - Calendar UI
